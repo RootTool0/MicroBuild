@@ -1,0 +1,20 @@
+// MicroBuild
+
+#pragma once
+
+#include "Structures.h"
+
+#define WINDOW_WIDTH 160
+#define WINDOW_HEIGHT 128
+#define WINDOW_SCALE 9
+
+#define WINDOW_HALF_WIDTH (WINDOW_WIDTH / 2)
+#define WINDOW_HALF_HEIGHT (WINDOW_HEIGHT / 2)
+
+#define NON_EUCLIDEAN_PORTAL_MAX_RECURSION 8
+#define RENDER_TASK_QUEUE_ELEMENTS 32
+
+#define DEBUG_SERIAL_PRINT_TICKS 1 // FPS = 250'000 / TicksFromLog
+#define DEBUG_NO_ST7355 0
+#define DEBUG_NO_COLLISION 0
+#define DEBUG_SELECT_SECTORS 0
