@@ -91,10 +91,8 @@ public:
         /**/ if(KeyState[SDL_SCANCODE_Q]) GKey = 'q';
         else if(KeyState[SDL_SCANCODE_E]) GKey = 'e';
         
-#if __IDE__ && DEBUG_SELECT_SECTORS
         else if(KeyState[SDL_SCANCODE_Z]) { GKey = 'z'; SDL_Delay(100); printf("CurrentSector: %i\n", FPlayer::CurrentSector + 1); }
         else if(KeyState[SDL_SCANCODE_X]) { GKey = 'x'; SDL_Delay(100); printf("CurrentSector: %i\n", FPlayer::CurrentSector - 1); }
-#endif
         
         else if(KeyState[SDL_SCANCODE_R]) GKey = 'r';
         else if(KeyState[SDL_SCANCODE_F]) GKey = 'f';
@@ -131,44 +129,10 @@ struct ST7735
         YS = InY0; YE = InY1;
         CurrentX = XS;
         CurrentY = YS;
-        IsHighByte = true;
     }
     
     static void BeginDraw() {}
     static void EndDraw() {}
-    
-    /*
-    static void Draw(const uint16 InByte)
-    { 
-        if (IsHighByte)
-        {
-            HighByteBuf = InByte;
-            IsHighByte = false;
-        }
-        else
-        {
-            FColor RawColor;
-            RawColor.Data = (HighByteBuf << 8) | InByte;
-            
-            if (CurrentX < WINDOW_WIDTH && CurrentY < WINDOW_HEIGHT)
-            {
-                GScreen[WINDOW_WIDTH * CurrentY + CurrentX] = RawColor;
-            }
-            
-            CurrentX++;
-            if (CurrentX > XE)
-            {
-                CurrentX = XS;
-                CurrentY++;
-                if (CurrentY > YE)
-                {
-                    CurrentY = YS;
-                }
-            }
-            IsHighByte = true;
-        }
-    }
-    */
     
     static void Draw(const uint16 InColor)
     { 
@@ -182,17 +146,11 @@ struct ST7735
             // SDL_Delay(2);
         }
         
-        CurrentX++;
-        if (CurrentX > XE)
+        if(++CurrentX > XE)
         {
             CurrentX = XS;
-            CurrentY++;
-            if (CurrentY > YE)
-            {
-                CurrentY = YS;
-            }
+            if(++CurrentY > YE) CurrentY = YS;
         }
-        IsHighByte = true;
     }
     
     static void DrawFast(const uint16 InColor) { Draw(InColor); }
@@ -203,9 +161,6 @@ private:
     
     static inline uint8 CurrentX = 0;
     static inline uint8 CurrentY = 0;
-    
-    static inline bool IsHighByte = true;
-    static inline uint8 HighByteBuf = 0;
 };
 
 class FWindowGuard

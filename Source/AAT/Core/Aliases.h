@@ -8,6 +8,7 @@
 #define __volatile__
 #define __DOXYGEN__
 #define __AVR_ATmega328__
+#define PROGMEM
 
 #endif
 

@@ -129,6 +129,8 @@ struct FWall
     int8 PortalNextSector;
     int8 PortalNextWall;
     FAngle PortalAngleDelta;
+    
+    static FWall LoadFromFlash(const void* InFlashAddr) { FWall Sector; FPROGMEM::Memcpy(&Sector, InFlashAddr, sizeof(FWall)); return Sector; }
 };
 
 struct FSector
@@ -139,6 +141,8 @@ struct FSector
     uint8 WallCount;
     
     int8 GetMiddleZ() const { return (FloorZ + CeilZ) / 2; }
+    
+    static FSector LoadFromFlash(const void* InFlashAddr) { FSector Sector; FPROGMEM::Memcpy(&Sector, InFlashAddr, sizeof(FSector)); return Sector; }
 };
 
 /*

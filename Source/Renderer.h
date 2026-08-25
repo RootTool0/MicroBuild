@@ -6,7 +6,6 @@
 
 #include "Global.h"
 #include "Math.h"
-#include "RenderTask.h"
 #include "Structures.h"
 
 #if __IDE__
@@ -17,8 +16,7 @@
 #include "AAT/GPIO/Pin.h"
 #include "AAT/Communication/Serial.h"
 
-#if DEBUG_NO_ST7355
-struct TEmptyST7735
+struct FEmptyST7735
 {
     
 public:
@@ -35,17 +33,10 @@ public:
     static void FillScreen(const uint16 InColor) {}
 };
 
-using ST7735 = TEmptyST7735;
-#else
-using ST7735 = TST7735<EPin::D6, EPin::D2>;
-#endif
-
-#endif
-
-    
-#if !__IDE__ && DEBUG_SERIAL_PRINT_TICKS
 struct FTimerFPS
 {
+    
+public:
     static void Initialize() { TCCR1A = 0; TCCR1B = (1 << CS11) | (1 << CS10); }
     static void Start() { TCNT1 = 0;  }
     static void End()
@@ -61,7 +52,50 @@ struct FTimerFPS
         FSerial::Send('\r');
     }
 };
+
+#if DEBUG_NO_ST7355
+using ST7735 = FEmptyST7735;
+#else
+using ST7735 = TST7735<EPin::D6, EPin::D2>;
 #endif
+
+#endif
+
+struct FRenderTask
+{
+    
+public:
+    int8 SectorIndex;
+    int16 MinX;
+    int16 MaxX;
+    FVector2D CameraLocation;
+    FAngle CameraAngle;
+};
+
+struct FRenderTaskQueue
+{
+    
+public:
+    static inline FRenderTask Queue[RENDER_TASK_QUEUE_ELEMENTS] = {};
+    
+    static void Empty() { Head = 0; Tail = 0; }
+    
+    static bool AddTask(const FRenderTask&& InRenderTask)
+    {
+        if(Head >= RENDER_TASK_QUEUE_ELEMENTS) return false;
+        Queue[Head++] = InRenderTask;
+        return true;
+    }
+    
+    static int8 PopTaskIndex()
+    {
+        return Tail >= Head || Tail >= RENDER_TASK_QUEUE_ELEMENTS ? -1 : Tail++;
+    }
+
+private:
+    static inline int8 Head = 0;
+    static inline int8 Tail = 0;
+};
 
 struct FRenderer
 {
@@ -91,11 +125,11 @@ public:
             const int8 TaskIndex = FRenderTaskQueue::PopTaskIndex();
             if(TaskIndex == -1) break;
             RenderSector(
-                FRenderTaskQueue::Queue[TaskIndex].InSectorIndex,
-                FRenderTaskQueue::Queue[TaskIndex].InMinX,
-                FRenderTaskQueue::Queue[TaskIndex].InMaxX,
-                FRenderTaskQueue::Queue[TaskIndex].InCameraLocation,
-                FRenderTaskQueue::Queue[TaskIndex].InCameraAngle
+                FRenderTaskQueue::Queue[TaskIndex].SectorIndex,
+                FRenderTaskQueue::Queue[TaskIndex].MinX,
+                FRenderTaskQueue::Queue[TaskIndex].MaxX,
+                FRenderTaskQueue::Queue[TaskIndex].CameraLocation,
+                FRenderTaskQueue::Queue[TaskIndex].CameraAngle
             );
             
             // RenderSector(FPlayer::CurrentSector, 0, WINDOW_WIDTH - 1, FPlayer::LocationXY, FPlayer::Angle);
@@ -167,7 +201,7 @@ private:
     {
         if(InMinX > InMaxX) return;
         
-        const FSector Sector = FPROGMEM::ReadObjectS<FSector>(&GSectors[InSectorIndex]);
+        const FSector Sector = FSector::LoadFromFlash(&GSectors[InSectorIndex]);
         
         const FFixedFloat CosA = FMath::Cos(InCameraAngle);
         const FFixedFloat SinA = FMath::Sin(InCameraAngle);
@@ -175,7 +209,7 @@ private:
         
         for(int16 WallIndex = 0; WallIndex < Sector.WallCount; ++WallIndex)
         {
-            const FWall Wall = FPROGMEM::ReadObjectW<FWall>(&GWalls[Sector.WallStartIndex + WallIndex]);
+            const FWall Wall = FWall::LoadFromFlash(&GWalls[Sector.WallStartIndex + WallIndex]);
             
             const FVector2D D1 = Wall.Point1 - InCameraLocation;
             const FVector2D D2 = Wall.Point2 - InCameraLocation;
@@ -223,7 +257,7 @@ private:
             else // Portal
             {
                 // const FSector& NextSector = GSectors[Wall.PortalNextSector];
-                const FSector NextSector = FPROGMEM::ReadObjectS<FSector>(&GSectors[Wall.PortalNextSector]);
+                const FSector NextSector = FSector::LoadFromFlash(&GSectors[Wall.PortalNextSector]);
                 
                 const int16 NextCeil1  = ((WINDOW_HEIGHT / 2) - (FFixedFloat(NextSector.CeilZ  - FPlayer::LocationZ) * (FovDistance / T1.Y)).ToInt());
                 const int16 NextFloor1 = ((WINDOW_HEIGHT / 2) - (FFixedFloat(NextSector.FloorZ - FPlayer::LocationZ) * (FovDistance / T1.Y)).ToInt());
@@ -287,7 +321,7 @@ private:
                 }
                 else if(NonEuclideanPortalRecursion++ <= NON_EUCLIDEAN_PORTAL_MAX_RECURSION)  // Non-Euclidean Portal
                 {
-                    const FWall TargetWall = FPROGMEM::ReadObjectW<FWall>(&GWalls[Wall.PortalNextWall]);
+                    const FWall TargetWall = FWall::LoadFromFlash(&GWalls[Wall.PortalNextWall]);
                     const FAngle VirtualAngle = InCameraAngle + Wall.PortalAngleDelta;
                     
                     const FVector2D PortalCenter = (Wall.Point1 + Wall.Point2).DivByTwo();

@@ -29,10 +29,8 @@ int main()
         {
         default: break;
             
-#if __IDE__ && DEBUG_SELECT_SECTORS
         case 'z': ++FPlayer::CurrentSector; break;
         case 'x': --FPlayer::CurrentSector; break;
-#endif
             
         case 'q': FPlayer::Angle += 4; break;
         case 'e': FPlayer::Angle -= 4; break;
@@ -54,19 +52,15 @@ int main()
                 
                 // Resolve....
                 {
-                    // const FSector& Sector = GSectors[FPlayer::CurrentSector];
-                    const FSector Sector = FPROGMEM::ReadObjectS<FSector>(&GSectors[FPlayer::CurrentSector]);
+                    const FSector Sector = FSector::LoadFromFlash(&GSectors[FPlayer::CurrentSector]);
                     
                     for(int16 WallIndex = 0; WallIndex < Sector.WallCount; ++WallIndex)
                     {
-                        // const FWall& Wall = GWalls[Sector.WallStartIndex + WallIndex];
-                        const FWall Wall = FPROGMEM::ReadObjectW<FWall>(&GWalls[Sector.WallStartIndex + WallIndex]);
+                        const FWall Wall = FWall::LoadFromFlash(&GWalls[Sector.WallStartIndex + WallIndex]);
                         
                         if(!FMath::IsLineSegmentsIntersect(OldPlayerLocation, FPlayer::LocationXY, Wall.Point1, Wall.Point2)) continue;
-
-#if __IDE__ && DEBUG_SELECT_SECTORS
+                        
                         printf("Intersect Section: %i, Wall: %i (Absolute: %i)\n", FPlayer::CurrentSector, WallIndex, Sector.WallStartIndex + WallIndex);
-#endif
                         
                         if(Wall.PortalNextSector == -1)
                         {
@@ -78,8 +72,7 @@ int main()
                         {
                             if(Wall.PortalNextWall != -1) 
                             {
-                                // const FWall& TargetWall = GWalls[Wall.PortalNextWall];
-                                const FWall TargetWall = FPROGMEM::ReadObjectW<FWall>(&GWalls[Wall.PortalNextWall]);
+                                const FWall TargetWall = FWall::LoadFromFlash(&GWalls[Wall.PortalNextWall]);
                                 
                                 FPlayer::Angle = FPlayer::Angle + Wall.PortalAngleDelta;
                     
@@ -92,8 +85,7 @@ int main()
                             }
                             
                             FPlayer::CurrentSector = Wall.PortalNextSector;
-                            const FSector NewSector = FPROGMEM::ReadObjectS<FSector>(&GSectors[FPlayer::CurrentSector]);
-                            FPlayer::LocationZ = NewSector.GetMiddleZ();
+                            FPlayer::LocationZ = FSector::LoadFromFlash(&GSectors[FPlayer::CurrentSector]).GetMiddleZ();
                         }
                         
                         break;
