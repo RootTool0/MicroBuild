@@ -6,20 +6,23 @@
 #include "Math.h"
 #include "Structures.h"
 #include "Renderer.h"
+#include "Map.h"
 
 int main()
 {
-#if __IDE__
+    MapSetup();
+    
+    #if __IDE__
     FWindowGuard WindowGuard;
     memset(GScreen, 80, sizeof(GScreen));
-#endif
+    #endif
     
     ST7735::Initialize();
     FSerial::Initialize<9600>();
     
-#if !__IDE__ && DEBUG_SERIAL_PRINT_TICKS
+    #if !__IDE__ && DEBUG_SERIAL_PRINT_TICKS
     FTimerFPS::Initialize();
-#endif
+    #endif
     
     while(true)
     {
@@ -32,8 +35,8 @@ int main()
         case 'z': ++FPlayer::CurrentSector; break;
         case 'x': --FPlayer::CurrentSector; break;
             
-        case 'q': FPlayer::Angle += 4; break;
-        case 'e': FPlayer::Angle -= 4; break;
+        case 'q': FPlayer::Angle += 1; break;
+        case 'e': FPlayer::Angle -= 1; break;
             
         case 'r': FPlayer::LocationZ += 1; break;
         case 'f': FPlayer::LocationZ -= 1; break;
@@ -43,12 +46,12 @@ int main()
         case 'a':
         case 'd':
             {
-                const FVector2D OldPlayerLocation = FPlayer::LocationXY;
+                const FFloatVector2D OldPlayerLocation = FPlayer::LocationXY;
                 
-                /**/ if(Char == 'w') FPlayer::LocationXY += FVector2D(-FMath::Sin(FPlayer::Angle), +FMath::Cos(FPlayer::Angle)).MulByTwo();
-                else if(Char == 's') FPlayer::LocationXY += FVector2D(+FMath::Sin(FPlayer::Angle), -FMath::Cos(FPlayer::Angle)).MulByTwo();
-                else if(Char == 'a') FPlayer::LocationXY += FVector2D(-FMath::Cos(FPlayer::Angle), -FMath::Sin(FPlayer::Angle)).MulByTwo();
-                else if(Char == 'd') FPlayer::LocationXY += FVector2D(+FMath::Cos(FPlayer::Angle), +FMath::Sin(FPlayer::Angle)).MulByTwo();
+                /**/ if(Char == 'w') FPlayer::LocationXY += FFloatVector2D(-FMath::Sin(FPlayer::Angle), +FMath::Cos(FPlayer::Angle)).MulByTwo(); // .DivByTwo().DivByTwo();
+                else if(Char == 's') FPlayer::LocationXY += FFloatVector2D(+FMath::Sin(FPlayer::Angle), -FMath::Cos(FPlayer::Angle)).MulByTwo(); // .DivByTwo().DivByTwo();
+                else if(Char == 'a') FPlayer::LocationXY += FFloatVector2D(-FMath::Cos(FPlayer::Angle), -FMath::Sin(FPlayer::Angle)).MulByTwo(); // .DivByTwo().DivByTwo();
+                else if(Char == 'd') FPlayer::LocationXY += FFloatVector2D(+FMath::Cos(FPlayer::Angle), +FMath::Sin(FPlayer::Angle)).MulByTwo(); // .DivByTwo().DivByTwo();
                 
                 // Resolve....
                 {
@@ -60,13 +63,15 @@ int main()
                         
                         if(!FMath::IsLineSegmentsIntersect(OldPlayerLocation, FPlayer::LocationXY, Wall.Point1, Wall.Point2)) continue;
                         
-                        printf("Intersect Section: %i, Wall: %i (Absolute: %i)\n", FPlayer::CurrentSector, WallIndex, Sector.WallStartIndex + WallIndex);
+                        #if __IDE__
+                        printf("Intersect Section: %i, Wall: %i\n", FPlayer::CurrentSector, WallIndex);
+                        #endif
                         
                         if(Wall.PortalNextSector == -1)
                         {
-#if !DEBUG_NO_COLLISION
+                            #if !DEBUG_NO_COLLISION
                             FPlayer::LocationXY = OldPlayerLocation;
-#endif
+                            #endif
                         }
                         else
                         {
@@ -75,17 +80,17 @@ int main()
                                 const FWall TargetWall = FWall::LoadFromFlash(&GWalls[Wall.PortalNextWall]);
                                 
                                 FPlayer::Angle = FPlayer::Angle + Wall.PortalAngleDelta;
-                    
-                                const FVector2D LocalLocation = FPlayer::LocationXY - (Wall.Point1 + Wall.Point2).DivByTwo();
+                                
+                                const FFloatVector2D LocalLocation = FPlayer::LocationXY - FFloatVector2D(FFloatVector2D(Wall.Point1) + FFloatVector2D(Wall.Point2)).DivByTwo();
                                 const FFixedFloat Cos = FMath::Cos(Wall.PortalAngleDelta);
                                 const FFixedFloat Sin = FMath::Sin(Wall.PortalAngleDelta);
-                    
-                                const FVector2D RotatedLocal(LocalLocation.X * Cos - LocalLocation.Y * Sin, LocalLocation.X * Sin + LocalLocation.Y * Cos);
-                                FPlayer::LocationXY = (TargetWall.Point1 + TargetWall.Point2).DivByTwo() + RotatedLocal;
+                                
+                                const FFloatVector2D RotatedLocal(LocalLocation.X * Cos - LocalLocation.Y * Sin, LocalLocation.X * Sin + LocalLocation.Y * Cos);
+                                FPlayer::LocationXY = FFloatVector2D(FFloatVector2D(TargetWall.Point1) + FFloatVector2D(TargetWall.Point2)).DivByTwo() + RotatedLocal;
                             }
                             
                             FPlayer::CurrentSector = Wall.PortalNextSector;
-                            FPlayer::LocationZ = FSector::LoadFromFlash(&GSectors[FPlayer::CurrentSector]).GetMiddleZ();
+                            FPlayer::LocationZ = FSector::LoadFromFlash(&GSectors[FPlayer::CurrentSector]).FloorZ + FPlayer::Height;
                         }
                         
                         break;

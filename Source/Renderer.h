@@ -7,6 +7,7 @@
 #include "Global.h"
 #include "Math.h"
 #include "Structures.h"
+#include "Map.h"
 
 #if __IDE__
 #include "QuickFixOrEmulatorForPC.h"
@@ -68,7 +69,7 @@ public:
     int8 SectorIndex;
     int16 MinX;
     int16 MaxX;
-    FVector2D CameraLocation;
+    FFloatVector2D CameraLocation;
     FAngle CameraAngle;
 };
 
@@ -99,19 +100,19 @@ private:
 
 struct FRenderer
 {
-
+    
 public:
     static void Render()
     {
-#if __IDE__
+        #if __IDE__
         if(!FWindow::IsRunning()) exit(0);
         FWindow::Render();
         memset(GScreen, 80, sizeof(GScreen));
-#endif
+        #endif
         
-#if !__IDE__ && DEBUG_SERIAL_PRINT_TICKS
+        #if !__IDE__ && DEBUG_SERIAL_PRINT_TICKS
         FTimerFPS::Start();
-#endif
+        #endif
         
         memset(ClipTop   , 0                , sizeof(ClipTop   ));
         memset(ClipBottom, WINDOW_HEIGHT - 1, sizeof(ClipBottom));
@@ -135,9 +136,9 @@ public:
             // RenderSector(FPlayer::CurrentSector, 0, WINDOW_WIDTH - 1, FPlayer::LocationXY, FPlayer::Angle);
         }
         
-#if !__IDE__ && DEBUG_SERIAL_PRINT_TICKS
+        #if !__IDE__ && DEBUG_SERIAL_PRINT_TICKS
         FTimerFPS::End();
-#endif
+        #endif
     }
 
 private:
@@ -150,19 +151,19 @@ private:
         FColor(255, 0  , 0  ), //  0 - Красный
         FColor(255, 128, 0  ), //  1 - Оранжевый
         FColor(255, 255, 0  ), //  2 - Желтый
-    
+        
         FColor(0  , 255, 0  ), //  3 - Зеленый
         FColor(0  , 255, 128), //  4 - Салатовый / Мятный
         FColor(0  , 255, 255), //  5 - Голубой
-    
+        
         FColor(0  , 128, 255), //  6 - Лазурный
         FColor(0  , 0  , 255), //  7 - Синий
         FColor(128, 0  , 255), //  8 - Фиолетовый
-    
+        
         FColor(255, 0  , 255), //  9 - Розовый
         FColor(255, 0  , 128), // 10 - Малиновый
         FColor(128, 64 , 0  ), // 11 - Коричневый
-    
+        
         FColor(255, 255, 255), // 12 - Белый
         FColor(128, 128, 128), // 13 - Серый
         FColor(64 , 64 , 64 ), // 14 - Темно-серый
@@ -180,7 +181,7 @@ private:
         ST7735::EndDraw();
     }
     
-    static void DrawWall(const uint8 InX, int16 InTopY, int16 InBottomY, const FColor InColor)
+    static void DrawWall(const uint8 InX, int16 InTopY, int16 InBottomY, const FColor InWallColor, const FColor InCeilColor = FColor(255, 0, 0), const FColor InFloorColor = FColor(0, 0, 255))
     {
         InTopY    = FMath::Max<int16>(ClipTop   [InX], InTopY   );
         InBottomY = FMath::Min<int16>(ClipBottom[InX], InBottomY);
@@ -188,16 +189,16 @@ private:
         ST7735::SetWindow(InX, ClipTop[InX], InX, ClipBottom[InX]);
         ST7735::BeginDraw();
         {
-            for(int16 _ = ClipTop[InX]; _ <= InTopY - 1; ++_) ST7735::DrawFast(FColor(255, 0, 0).Data);
-            ST7735::DrawFast(FColor(0, 0, 0).Data);
-            for(int16 _ = InTopY + 1; _ <= InBottomY - 1; ++_) ST7735::DrawFast(InColor.Data);
-            ST7735::DrawFast(FColor(0, 0, 0).Data);
-            for(int16 _ = InBottomY + 1; _ <= ClipBottom[InX]; ++_) ST7735::DrawFast(FColor(0, 0, 255).Data);
+            for(int16 _ = ClipTop[InX]; _ <= InTopY - 1; ++_) ST7735::DrawFast(InCeilColor.Data);
+            ST7735::DrawFast(FColor::Black.Data);
+            for(int16 _ = InTopY + 1; _ <= InBottomY - 1; ++_) ST7735::DrawFast(InWallColor.Data);
+            ST7735::DrawFast(FColor::Black.Data);
+            for(int16 _ = InBottomY + 1; _ <= ClipBottom[InX]; ++_) ST7735::DrawFast(InFloorColor.Data);
         }
         ST7735::EndDraw();
     }
     
-    static void RenderSector(const uint16 InSectorIndex, const int16 InMinX, const int16 InMaxX, const FVector2D InCameraLocation, const FAngle InCameraAngle)
+    static void RenderSector(const uint16 InSectorIndex, const int16 InMinX, const int16 InMaxX, const FFloatVector2D InCameraLocation, const FAngle InCameraAngle)
     {
         if(InMinX > InMaxX) return;
         
@@ -211,11 +212,11 @@ private:
         {
             const FWall Wall = FWall::LoadFromFlash(&GWalls[Sector.WallStartIndex + WallIndex]);
             
-            const FVector2D D1 = Wall.Point1 - InCameraLocation;
-            const FVector2D D2 = Wall.Point2 - InCameraLocation;
+            const FFloatVector2D D1 = FFloatVector2D(Wall.Point1) - InCameraLocation;
+            const FFloatVector2D D2 = FFloatVector2D(Wall.Point2) - InCameraLocation;
             
-            FVector2D T1 = FVector2D(D1.X * CosA + D1.Y * SinA, D1.Y * CosA - D1.X * SinA);
-            FVector2D T2 = FVector2D(D2.X * CosA + D2.Y * SinA, D2.Y * CosA - D2.X * SinA);
+            FFloatVector2D T1 = FFloatVector2D(D1.X * CosA + D1.Y * SinA, D1.Y * CosA - D1.X * SinA);
+            FFloatVector2D T2 = FFloatVector2D(D2.X * CosA + D2.Y * SinA, D2.Y * CosA - D2.X * SinA);
             
             if(T1.Y <= FFixedFloat::Zero && T2.Y <= FFixedFloat::Zero) continue;
             
@@ -247,8 +248,8 @@ private:
                     const int16 Ceil  = FMath::Lerp(Ceil1 , Ceil2 , Delta);
                     const int16 Floor = FMath::Lerp(Floor1, Floor2, Delta);
                     
-                    const FColor WallColor = X == X1 || X == X2 ? FColor(0, 0, 0) : GPalette[Wall.WallPaletteIndex];
-                    DrawWall(X, Ceil, Floor, WallColor);
+                    const FColor WallColor = X == X1 || X == X2 ? FColor::Black : GPalette[Wall.WallPaletteIndex];
+                    DrawWall(X, Ceil, Floor, WallColor, GPalette[Sector.CeilPaletteIndex], GPalette[Sector.FloorPaletteIndex]);
                     
                     ClipTop   [X] = FMath::Clamp<int16>(Ceil , ClipTop[X], ClipBottom[X]);
                     ClipBottom[X] = FMath::Clamp<int16>(Floor, ClipTop[X], ClipBottom[X]);
@@ -276,14 +277,14 @@ private:
                     
                     // DrawPortal(X, Ceil, Floor, NextCeil, NextFloor, Sector.CeilZ, Sector.FloorZ, NextSector.CeilZ, NextSector.FloorZ, WallColor);
                     {
-                        const FColor WallColor = X == X1 || X == X2 ? FColor(0, 0, 0) : GPalette[Wall.WallPaletteIndex];
+                        const FColor WallColor = X == X1 || X == X2 ? FColor::Black : GPalette[Wall.WallPaletteIndex];
                         const int16 TopEnd = (Sector.CeilZ > NextSector.CeilZ ? NextCeil : Ceil) - 1;
                         ST7735::SetWindow(X, ClipTop[X], X, TopEnd);
                         ST7735::BeginDraw();
                         {
                             for(int16 Y = ClipTop[X]; Y <= TopEnd; ++Y)
                             {
-                                if(Y <= Ceil) ST7735::DrawFast(FColor::Ceil.Data);
+                                if(Y <= Ceil) ST7735::DrawFast(GPalette[Sector.CeilPaletteIndex].Data);
                                 else
                                 {
                                     const bool bBlack = (Y == Ceil + 1 || Y == TopEnd) && Sector.FloorZ != NextSector.FloorZ;
@@ -299,7 +300,7 @@ private:
                         {
                             for(int16 Y = BottomStart; Y <= ClipBottom[X]; ++Y)
                             {
-                                if(Y >= Floor) ST7735::DrawFast(FColor::Floor.Data);
+                                if(Y >= Floor) ST7735::DrawFast(GPalette[Sector.FloorPaletteIndex].Data);
                                 else
                                 {
                                     const bool bBlack = (Y == BottomStart  || Y == Floor - 1) && Sector.FloorZ != NextSector.FloorZ;
@@ -324,16 +325,16 @@ private:
                     const FWall TargetWall = FWall::LoadFromFlash(&GWalls[Wall.PortalNextWall]);
                     const FAngle VirtualAngle = InCameraAngle + Wall.PortalAngleDelta;
                     
-                    const FVector2D PortalCenter = (Wall.Point1 + Wall.Point2).DivByTwo();
-                    const FVector2D TargetCenter = (TargetWall.Point1 + TargetWall.Point2).DivByTwo();
+                    const FFloatVector2D PortalCenter = FFloatVector2D(FFloatVector2D(      Wall.Point1) + FFloatVector2D(      Wall.Point2)).DivByTwo();
+                    const FFloatVector2D TargetCenter = FFloatVector2D(FFloatVector2D(TargetWall.Point1) + FFloatVector2D(TargetWall.Point2)).DivByTwo();
                     
-                    const FVector2D LocalLocation = InCameraLocation - PortalCenter;
+                    const FFloatVector2D LocalLocation = InCameraLocation - PortalCenter;
                     
                     const FFixedFloat CosAngle = FMath::Cos(Wall.PortalAngleDelta);
                     const FFixedFloat SinAngle = FMath::Sin(Wall.PortalAngleDelta);
                     
-                    const FVector2D RotatedLocation = FVector2D(LocalLocation.X * CosAngle - LocalLocation.Y * SinAngle, LocalLocation.Y * CosAngle + LocalLocation.X * SinAngle); 
-                    const FVector2D VirtualLocation = TargetCenter + RotatedLocation;
+                    const FFloatVector2D RotatedLocation = FFloatVector2D(LocalLocation.X * CosAngle - LocalLocation.Y * SinAngle, LocalLocation.Y * CosAngle + LocalLocation.X * SinAngle); 
+                    const FFloatVector2D VirtualLocation = TargetCenter + RotatedLocation;
                     
                     FRenderTaskQueue::AddTask({ Wall.PortalNextSector, StartX, EndX, VirtualLocation, VirtualAngle });
                     continue;

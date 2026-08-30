@@ -4,8 +4,8 @@
 
 #include "Structures.h"
 
-#define WINDOW_WIDTH 160
-#define WINDOW_HEIGHT 128
+#define WINDOW_WIDTH 160/2
+#define WINDOW_HEIGHT 128/2
 #define WINDOW_SCALE 9
 
 #define WINDOW_HALF_WIDTH (WINDOW_WIDTH / 2)

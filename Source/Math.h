@@ -52,7 +52,7 @@ public:
     
     static FFixedFloat Cos(const FAngle InAngle) { return Sin(InAngle + 64); }
     
-    static bool IsLineSegmentsIntersect(const FVector2D A, const FVector2D B, const FVector2D C, const FVector2D D)
+    static bool IsLineSegmentsIntersect(const FFloatVector2D A, const FFloatVector2D B, const FFloatVector2D C, const FFloatVector2D D)
     {
         const FFixedFloat Denominator = (B.X - A.X) * (D.Y - C.Y) - (B.Y - A.Y) * (D.X - C.X);
         if(Denominator == FFixedFloat::Zero) return false;

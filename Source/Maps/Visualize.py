@@ -1,0 +1,296 @@
+import re
+import sys
+import pygame
+
+SCREEN_WIDTH, SCREEN_HEIGHT = 1024, 768
+
+def parse_cpp_level(file_path):
+    with open(file_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    walls = []
+    sectors = []
+    
+    in_walls = False
+    in_sectors = False
+
+    for line in lines:
+        line = re.sub(r'//.*', '', line).strip()
+        if not line:
+            continue
+
+        if "GWalls" in line:
+            in_walls = True
+            in_sectors = False
+            continue
+        elif "GSectors" in line:
+            in_sectors = True
+            in_walls = False
+            continue
+        elif line.startswith("};"):
+            in_walls = False
+            in_sectors = False
+            continue
+
+        if in_walls:
+            vectors = re.findall(r'FIntVector2D\s*\(\s*([-+]?\d+)\s*,\s*([-+]?\d+)\s*\)', line)
+            if len(vectors) >= 2:
+                p1 = (int(vectors[0][0]), int(vectors[0][1]))
+                p2 = (int(vectors[1][0]), int(vectors[1][1]))
+                
+                rest_of_line = re.sub(r'FIntVector2D\s*\([^)]*\)', '', line)
+                remaining_nums = [int(n) for n in re.findall(r'[-+]?\d+', rest_of_line)]
+                
+                if len(remaining_nums) >= 4:
+                    walls.append({
+                        "p1": p1,
+                        "p2": p2,
+                        "palette": remaining_nums[0],
+                        "next_sector": remaining_nums[1],
+                        "next_wall": remaining_nums[2],
+                        "angle_delta": remaining_nums[3]
+                    })
+                
+        elif in_sectors:
+            nums = [int(n) for n in re.findall(r'[-+]?\d+', line)]
+            if len(nums) >= 6:
+                sectors.append({
+                    "floor_z": nums[0],
+                    "ceil_z": nums[1],
+                    "start_wall": nums[2],
+                    "count_wall": nums[3],
+                    "ceil_palette": nums[4],
+                    "floor_palette": nums[5]
+                })
+
+    return walls, sectors
+
+def main():
+    if len(sys.argv) < 2:
+        print("Ошибка! Передайте имя файла.\nПример запуска: python Visualize.py Level.h")
+        return
+
+    file_path = sys.argv[1]
+
+    pygame.init()
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    pygame.display.set_caption("MicroBuild Level Visualizer")
+    clock = pygame.time.Clock()
+    font = pygame.font.SysFont("Arial", 14)
+
+    cam_x, cam_y = SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2
+    scale = 6.0
+    
+    dragging = False
+    last_mouse_pos = (0, 0)
+    selected_sector_idx = 0
+    
+    walls, sectors = [], []
+    status_msg = ""
+
+    def auto_fit_map():
+        nonlocal cam_x, cam_y, scale
+        if not walls:
+            return
+        
+        all_x = [w["p1"][0] for w in walls] + [w["p2"][0] for w in walls]
+        all_y = [w["p1"][1] for w in walls] + [w["p2"][1] for w in walls]
+        
+        min_x, max_x = min(all_x), max(all_x)
+        min_y, max_y = min(all_y), max(all_y)
+        
+        map_width = max(1, max_x - min_x)
+        map_height = max(1, max_y - min_y)
+        
+        pad = 0.75
+        scale_x = (SCREEN_WIDTH * pad) / map_width
+        scale_y = (SCREEN_HEIGHT * pad) / map_height
+        scale = min(scale_x, scale_y)
+        scale = max(0.5, min(scale, 50.0))
+        
+        mid_map_x = (min_x + max_x) / 2
+        mid_map_y = (min_y + max_y) / 2
+        
+        cam_x = SCREEN_WIDTH // 2 - (mid_map_x * scale)
+        cam_y = SCREEN_HEIGHT // 2 + (mid_map_y * scale)
+
+    def load_level():
+        nonlocal walls, sectors, status_msg
+        try:
+            walls, sectors = parse_cpp_level(file_path)
+            status_msg = f"Loaded: {len(sectors)} sectors, {len(walls)} walls."
+            print(status_msg)
+            auto_fit_map()
+        except Exception as e:
+            status_msg = f"Reload failed: {e}"
+            print(status_msg)
+
+    load_level()
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+                else:
+                    print("Перезагрузка карты...")
+                    load_level()
+                    if sectors:
+                        selected_sector_idx = selected_sector_idx % len(sectors)
+                    else:
+                        selected_sector_idx = 0
+                    
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button in (2, 3):
+                    dragging = True
+                    last_mouse_pos = event.pos
+                elif event.button == 4:
+                    if sectors: selected_sector_idx = (selected_sector_idx + 1) % len(sectors)
+                elif event.button == 5:
+                    if sectors: selected_sector_idx = (selected_sector_idx - 1) % len(sectors)
+                    
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button in (2, 3):
+                    dragging = False
+                    
+            elif event.type == pygame.MOUSEMOTION:
+                if dragging:
+                    dx = event.pos[0] - last_mouse_pos[0]
+                    dy = event.pos[1] - last_mouse_pos[1]
+                    cam_x += dx
+                    cam_y += dy
+                    last_mouse_pos = event.pos
+
+        # --- ОТРИСОВКА ---
+        screen.fill((25, 25, 25))
+
+        def to_screen(pt):
+            return (int(cam_x + pt[0] * scale), int(cam_y - pt[1] * scale))
+
+        # 1. Заливка секторов полупрозрачным цветом
+        for s_idx, sec in enumerate(sectors):
+            start = sec["start_wall"]
+            count = sec["count_wall"]
+            
+            points = []
+            for w_idx in range(start, start + count):
+                if w_idx < len(walls):
+                    points.append(to_screen(walls[w_idx]["p1"]))
+            
+            if len(points) >= 3:
+                poly_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+                if s_idx == selected_sector_idx:
+                    fill_color = (255, 255, 0, 50)
+                else:
+                    fill_color = ((s_idx * 75) % 130 + 50, (s_idx * 125) % 130 + 50, (s_idx * 185) % 130 + 50, 35)
+                pygame.draw.polygon(poly_surface, fill_color, points)
+                screen.blit(poly_surface, (0, 0))
+
+        # 2. Отрисовка линий связи порталов (NextWall)
+        portal_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        for w_idx, w in enumerate(walls):
+            next_w_idx = w["next_wall"]
+            if next_w_idx != -1 and next_w_idx < len(walls):
+                # Находим центр текущей стены
+                mid_x1 = (w["p1"][0] + w["p2"][0]) / 2
+                mid_y1 = (w["p1"][1] + w["p2"][1]) / 2
+                p1_scr = to_screen((mid_x1, mid_y1))
+                
+                # Находим центр целевой стены портала
+                target_w = walls[next_w_idx]
+                mid_x2 = (target_w["p1"][0] + target_w["p2"][0]) / 2
+                mid_y2 = (target_w["p1"][1] + target_w["p2"][1]) / 2
+                p2_scr = to_screen((mid_x2, mid_y2))
+                
+                # Фиолетовая линия связи с полупрозрачностью
+                pygame.draw.line(portal_surface, (230, 80, 255, 120), p1_scr, p2_scr, 1)
+                # Маленький маркер-окружность в центре целевой стены, куда ведет портал
+                pygame.draw.circle(portal_surface, (230, 80, 255, 180), p2_scr, 3)
+        screen.blit(portal_surface, (0, 0))
+
+        # 3. Отрисовка линий стен
+        for s_idx, sec in enumerate(sectors):
+            is_selected = (s_idx == selected_sector_idx)
+            start = sec["start_wall"]
+            count = sec["count_wall"]
+            
+            for w_idx in range(start, start + count):
+                if w_idx >= len(walls):
+                    continue
+                w = walls[w_idx]
+                p1_scr = to_screen(w["p1"])
+                p2_scr = to_screen(w["p2"])
+                
+                if is_selected:
+                    color = (255, 255, 0)
+                    width = 4
+                elif w["next_sector"] != -1:
+                    color = (0, 160, 255)  # Портал — голубой
+                    width = 2
+                else:
+                    color = (200, 200, 200)  # Стена — белая
+                    width = 2
+                
+                pygame.draw.line(screen, color, p1_scr, p2_scr, width)
+                
+                # Текст с ID стены
+                mid_x = (p1_scr[0] + p2_scr[0]) // 2
+                mid_y = (p1_scr[1] + p2_scr[1]) // 2
+                if is_selected:
+                    # Основной ID стены
+                    lbl = font.render(f"W:{w_idx}", True, (255, 255, 0))
+                    screen.blit(lbl, (mid_x + 5, mid_y + 5))
+                    
+                    # Смещение по Y для строк подсказок портала
+                    current_y_offset = 20
+                    
+                    # Если есть связь с другим сектором (PortalNextSector)
+                    if w["next_sector"] != -1:
+                        s_lbl = font.render(f"S:{w['next_sector']}", True, (230, 80, 255))
+                        screen.blit(s_lbl, (mid_x + 5, mid_y + current_y_offset))
+                        current_y_offset += 15
+                    
+                    # Если есть связь с другой стеной
+                    if w["next_wall"] != -1:
+                        p_lbl = font.render(f"W:{w['next_wall']}", True, (230, 80, 255))
+                        screen.blit(p_lbl, (mid_x + 5, mid_y + current_y_offset))
+                        current_y_offset += 15
+                        
+                # Красные нормали направления стен
+                dx = p2_scr[0] - p1_scr[0]
+                dy = p2_scr[1] - p1_scr[1]
+                len_d = (dx**2 + dy**2)**0.5
+                if len_d > 0:
+                    nx = int(-dy / len_d * 6)
+                    ny = int(dx / len_d * 6)
+                    pygame.draw.line(screen, (220, 50, 50), (mid_x, mid_y), (mid_x + nx, mid_y + ny), 1)
+
+        # UI информация в углу
+        if sectors:
+            sel_sec = sectors[selected_sector_idx]
+            info_lines = [
+                f"FILE: {file_path}",
+                f"STATUS: {status_msg} | Auto-Scale: {scale:.2f}x",
+                f"CURRENT SECTOR: {selected_sector_idx} / {len(sectors)-1}",
+                f"Floor Z: {sel_sec['floor_z']} | Ceil Z: {sel_sec['ceil_z']}",
+                f"Palettes -> Ceil: {sel_sec['ceil_palette']} | Floor: {sel_sec['floor_palette']}",
+                f"Sector Walls: {sel_sec['count_wall']} (Global idx: {sel_sec['start_wall']}..{sel_sec['start_wall'] + sel_sec['count_wall'] - 1})",
+                "",
+                "CONTROLS:",
+                " [ANY KEY] - Reload file & Reset camera",
+                " [Mouse Scroll] - Switch active sector",
+                " [Right Mouse Drag] - Pan map manually",
+                " [ESC] - Exit"
+            ]
+            for i, line in enumerate(info_lines):
+                text_surface = font.render(line, True, (240, 240, 240))
+                screen.blit(text_surface, (15, 15 + i * 18))
+        pygame.display.flip()
+        clock.tick(60)
+    pygame.quit()
+
+main()

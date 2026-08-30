@@ -21,8 +21,6 @@ public:
 };
 
 constexpr FColor FColor::Black = FColor(0, 0, 0);
-constexpr FColor FColor::Ceil  = FColor(255, 0, 0);
-constexpr FColor FColor::Floor = FColor(0, 0, 255);
 
 struct FFixedFloat
 {
@@ -82,41 +80,68 @@ inline constexpr FFixedFloat FFixedFloat::One            = FFixedFloat(1.0f);
 inline constexpr FFixedFloat FFixedFloat::OnePointFive   = FFixedFloat(1.5f); 
 inline constexpr FFixedFloat FFixedFloat::ThreePointFive = FFixedFloat(3.5f); 
 
-struct FVector2D
+template<typename T>
+struct TVector2D
 {
     
 public:
-    FFixedFloat X;
-    FFixedFloat Y;
+    T X;
+    T Y;
     
-    constexpr FVector2D() : X(0), Y(0) {}
-    constexpr FVector2D(const FFixedFloat InF) : X(InF), Y(InF) {}
-    constexpr FVector2D(const FFixedFloat InX, const FFixedFloat InY) : X(InX), Y(InY) {}
+    constexpr TVector2D() : X(0), Y(0) {}
+    constexpr TVector2D(const T InF) : X(InF), Y(InF) {}
+    constexpr TVector2D(const T InX, const T InY) : X(InX), Y(InY) {}
     
-    constexpr FVector2D DivByTwo() const { return { X.DivByTwo(), Y.DivByTwo() }; }
-    constexpr FVector2D MulByTwo() const { return { X.MulByTwo(), Y.MulByTwo() }; }
+    constexpr TVector2D operator-() const { return { -X, -Y }; }
+    constexpr TVector2D operator+(const TVector2D& Other) const { return TVector2D( X + Other.X, Y + Other.Y ); }
+    constexpr TVector2D operator-(const TVector2D& Other) const { return TVector2D( X - Other.X, Y - Other.Y ); }
+    constexpr TVector2D operator*(const TVector2D& Other) const { return TVector2D( X * Other.X, Y * Other.Y ); }
+    constexpr TVector2D operator/(const TVector2D& Other) const { return TVector2D( X / Other.X, Y / Other.Y ); }
+    constexpr TVector2D operator*(const T Scalar) const { return { X * Scalar, Y * Scalar }; }
+    constexpr TVector2D operator/(const T Scalar) const { return { X / Scalar, Y / Scalar }; }
     
-    constexpr FVector2D operator-() const { return { -X, -Y }; }
-    constexpr FVector2D operator+(const FVector2D& Other) const { return { X + Other.X, Y + Other.Y }; }
-    constexpr FVector2D operator-(const FVector2D& Other) const { return { X - Other.X, Y - Other.Y }; }
-    constexpr FVector2D operator*(const FVector2D& Other) const { return { X * Other.X, Y * Other.Y }; }
-    constexpr FVector2D operator*(const FFixedFloat Scalar) const { return { X * Scalar, Y * Scalar }; }
-    constexpr FVector2D operator/(const FVector2D& Other) const { return { X / Other.X, Y / Other.Y }; }
-    constexpr FVector2D operator/(const FFixedFloat Scalar) const { return { X / Scalar, Y / Scalar }; }
-    
-    constexpr FVector2D& operator+=(const FVector2D& Other) { *this = *this + Other; return *this; }
-    constexpr FVector2D& operator-=(const FVector2D& Other) { *this = *this - Other; return *this; }
-    constexpr FVector2D& operator*=(const FVector2D& Other) { *this = *this * Other; return *this; }
-    constexpr FVector2D& operator*=(const FFixedFloat Scalar) { *this = *this * Scalar; return *this; }
-    constexpr FVector2D& operator/=(const FVector2D& Other) { *this = *this / Other; return *this; }
-    constexpr FVector2D& operator/=(const FFixedFloat Scalar) { *this = *this / Scalar; return *this; }
+    constexpr TVector2D& operator+=(const TVector2D& Other) { *this = *this + Other; return *this; }
+    constexpr TVector2D& operator-=(const TVector2D& Other) { *this = *this - Other; return *this; }
+    constexpr TVector2D& operator*=(const TVector2D& Other) { *this = *this * Other; return *this; }
+    constexpr TVector2D& operator/=(const TVector2D& Other) { *this = *this / Other; return *this; }
+    constexpr TVector2D& operator*=(const T Scalar) { *this = *this * Scalar; return *this; }
+    constexpr TVector2D& operator/=(const T Scalar) { *this = *this / Scalar; return *this; }
 };
 
 using FAngle = uint8;
+// using FIntVector2D = TVector2D<int16>;
+
+struct FIntVector2D : public TVector2D<int8>
+{
+    
+public:
+    using TVector2D<int8>::TVector2D;
+    
+    constexpr FIntVector2D DivByTwo() const { return { static_cast<int8>(X >> 1), static_cast<int8>(Y >> 1) }; }
+    constexpr FIntVector2D MulByTwo() const { return { static_cast<int8>(X << 1), static_cast<int8>(Y << 1) }; }
+};
+
+struct FFloatVector2D : public TVector2D<FFixedFloat>
+{
+    
+public:
+    using TVector2D<FFixedFloat>::TVector2D;
+
+    // constexpr FFloatVector2D(const FIntVector2D InIntVector2D) : X(InIntVector2D.X), Y(InIntVector2D.Y) {}
+    constexpr FFloatVector2D(const FIntVector2D InIntVector2D) : TVector2D<FFixedFloat>(InIntVector2D.X, InIntVector2D.Y) {}
+    constexpr FFloatVector2D(const TVector2D<FFixedFloat> InVector2D)  : TVector2D<FFixedFloat>(InVector2D.X, InVector2D.Y) {}
+    
+    constexpr FFloatVector2D DivByTwo() const { return { X.DivByTwo(), Y.DivByTwo() }; }
+    constexpr FFloatVector2D MulByTwo() const { return { X.MulByTwo(), Y.MulByTwo() }; }
+};
 
 struct FPlayer
 {
-    static inline FVector2D LocationXY;
+    
+public:
+    static constexpr int8 Height = 8;
+    
+    static inline FFloatVector2D LocationXY;
     static inline FAngle Angle = 32;
     static inline int8 CurrentSector = 0;
     static inline int8 LocationZ = 10;
@@ -124,8 +149,10 @@ struct FPlayer
 
 struct FWall
 {
-    FVector2D Point1, Point2;
-    int8 WallPaletteIndex;
+    
+public:
+    FIntVector2D Point1, Point2;
+    uint8 WallPaletteIndex;
     int8 PortalNextSector;
     int8 PortalNextWall;
     FAngle PortalAngleDelta;
@@ -135,12 +162,16 @@ struct FWall
 
 struct FSector
 {
+    
+public:
     int8 FloorZ;
     int8 CeilZ;
     uint8 WallStartIndex;
     uint8 WallCount;
+    uint8 CeilPaletteIndex;
+    uint8 FloorPaletteIndex;
     
-    int8 GetMiddleZ() const { return (FloorZ + CeilZ) / 2; }
+    // int8 GetMiddleZ() const { return (FloorZ + CeilZ) / 2; }
     
     static FSector LoadFromFlash(const void* InFlashAddr) { FSector Sector; FPROGMEM::Memcpy(&Sector, InFlashAddr, sizeof(FSector)); return Sector; }
 };
@@ -376,115 +407,3 @@ static inline constexpr FWall GWalls[] PROGMEM =
     { FVector2D(-24, -3 ), FVector2D(-24, +32 ), 10, -1 , -1 , 0 },
 };
 */
-
-static inline constexpr FWall GWalls[] PROGMEM =
-{
-    // 0
-    { FVector2D(-24, -32), { -24, +32 }, 10, -1 , -1 , 0 },
-    { FVector2D(-24, +32), { +24, +8  }, 12, +12, -1 , 0 },
-    { FVector2D(+24, +8 ), { +24, -8  }, 6 , -1 , -1 , 0 },
-    { FVector2D(+24, -8 ), { -24, -32 }, 12, +7 , -1 , 0 },
-    
-    // 1
-    { FVector2D(-40, -56), { -40, -32 }, 10, +8 , -1 , 0 },
-    { FVector2D(-40, -32), { -24, -32 }, 10, +14, +56, 0 },
-    { FVector2D(-24, -32), { -24, -56 }, 10, +7 , -1 , 0 },
-    { FVector2D(-24, -56), { -40, -56 }, 10, -1 , -1 , 0 },
-    
-    // 2
-    { FVector2D(+24, -56), { +24, -8  }, 6 , +7 , -1 , 0 },
-    { FVector2D(+24, -8 ), { +40, -8  }, 6 , +13, +52, 0 },
-    { FVector2D(+40, -8 ), { +40, -56 }, 6 , +4 , -1 , 0 },
-    { FVector2D(+40, -56), { +24, -56 }, 6 , -1 , -1 , 0 },
-    
-    // 3
-    { FVector2D(+24, +8 ), { +24, +56 }, 6 , +12, -1 , 0 },
-    { FVector2D(+24, +56), { +40, +56 }, 6 , -1 , -1 , 0 },
-    { FVector2D(+40, +56), { +40, +8  }, 6 , +6 , -1 , 0 },
-    { FVector2D(+40, +8 ), { +24, +8  }, 6 , +13, +54, 0 },
-    
-    // 4
-    { FVector2D(+40, -56), { +40, -8  }, 6 , +2 , -1 , 0 },
-    { FVector2D(+40, -8 ), { +64, -8  }, 6 , +5 , -1 , 0 },
-    { FVector2D(+64, -8 ), { +64, -56 }, 6 , -1 , -1 , 0 },
-    { FVector2D(+64, -56), { +40, -56 }, 6 , -1 , -1 , 0 },
-    
-    // 5
-    { FVector2D(+40, -8 ), { +40, +8  }, 6 , -1 , -1 , 0 },
-    { FVector2D(+40, +8 ), { +64, +8  }, 6 , +6 , -1 , 0 },
-    { FVector2D(+64, +8 ), { +64, -8  }, 6 , -1 , -1 , 0 },
-    { FVector2D(+64, -8 ), { +40, -8  }, 6 , +4 , -1 , 0 },
-    
-    // 6
-    { FVector2D(+40, +8 ), { +40, +56 }, 6 , +3 , -1 , 0 },
-    { FVector2D(+40, +56), { +64, +56 }, 6 , -1 , -1 , 0 },
-    { FVector2D(+64, +56), { +64, +8  }, 6 , -1 , -1 , 0 },
-    { FVector2D(+64, +8 ), { +40, +8  }, 6 , +5 , -1 , 0 },
-    
-    // 7
-    { FVector2D(-24, -56), { -24, -32 }, 12, +1 , -1 , 0 },
-    { FVector2D(-24, -32), { +24, -8  }, 12, +0 , -1 , 0 },
-    { FVector2D(+24, -8 ), { +24, -56 }, 12, +2 , -1 , 0 },
-    { FVector2D(+24, -56), { -24, -56 }, 12, -1 , -1 , 0 },
-    
-    // 8
-    { FVector2D(-64, -56), { -64, -32 }, 10, -1 , -1 , 0 },
-    { FVector2D(-64, -32), { -40, -32 }, 10, +9 , -1 , 0 },
-    { FVector2D(-40, -32), { -40, -56 }, 10, +1 , -1 , 0 },
-    { FVector2D(-40, -56), { -64, -56 }, 10, -1 , -1 , 0 },
-    
-    // 9
-    { FVector2D(-64, -32), { -64, +32 }, 10, -1 , -1 , 0 },
-    { FVector2D(-64, +32), { -40, +32 }, 10, +10, -1 , 0 },
-    { FVector2D(-40, +32), { -40, -32 }, 10, -1 , -1 , 0 },
-    { FVector2D(-40, -32), { -64, -32 }, 10, +8 , -1 , 0 },
-    
-    // 10
-    { FVector2D(-64, +32), { -64, +56 }, 10, -1 , -1 , 0 },
-    { FVector2D(-64, +56), { -40, +56 }, 10, -1 , -1 , 0 },
-    { FVector2D(-40, +56), { -40, +32 }, 10, +11, -1 , 0 },
-    { FVector2D(-40, +32), { -64, +32 }, 10, +9 , -1 , 0 },
-    
-    // 11
-    { FVector2D(-40, +32), { -40, +56 }, 10, +10, -1 , 0 },
-    { FVector2D(-40, +56), { -24, +56 }, 10, -1 , -1 , 0 },
-    { FVector2D(-24, +56), { -24, +32 }, 10, +12, -1 , 0 },
-    { FVector2D(-24, +32), { -40, +32 }, 10, +14, +58, 0 },
-    
-    // 12
-    { FVector2D(-24, +32), { -24, +56 }, 12, +11, -1 , 0 },
-    { FVector2D(-24, +56), { +24, +56 }, 12, -1 , -1 , 0 },
-    { FVector2D(+24, +56), { +24, +8  }, 12, +3 , -1 , 0 },
-    { FVector2D(+24, +8 ), { -24, +32 }, 12, +0 , -1 , 0 },
-    
-    // 13
-    { FVector2D(+16, +0 ), { +0 , +0  }, 10, +2 , +9 , 0 },
-    { FVector2D(+16, +64), { +16, +0  }, 10, -1 , -1 , 0 },
-    { FVector2D(+0 , +64), { +16, +64 }, 10, +3 , +15, 0 },
-    { FVector2D(+0 , +0 ), { +0 , +64 }, 10, -1 , -1 , 0 },
-    
-    // 14
-    { FVector2D(+16, +0 ), { +0 , +0  }, 6 , +1 , +5 , 0 },
-    { FVector2D(+16, +16), { +16, +0  }, 6 , -1 , -1 , 0 },
-    { FVector2D(+0 , +16), { +16, +16 }, 6 , +11, +47, 0 },
-    { FVector2D(+0 , +0 ), { +0 , +16 }, 6 , -1 , -1 , 0 },
-};
-
-static inline constexpr FSector GSectors[] PROGMEM =
-{
-    { 0, 20, 0 , 4 },
-    { 0, 20, 4 , 4 },
-    { 0, 20, 8 , 4 },
-    { 0, 20, 12, 4 },
-    { 0, 20, 16, 4 },
-    { 0, 20, 20, 4 },
-    { 0, 20, 24, 4 },
-    { 0, 20, 28, 4 },
-    { 0, 20, 32, 4 },
-    { 0, 20, 36, 4 },
-    { 0, 20, 40, 4 },
-    { 0, 20, 44, 4 },
-    { 0, 20, 48, 4 },
-    { 0, 20, 52, 4 },
-    { 0, 20, 56, 4 },
-};
