@@ -1,28 +1,28 @@
 // MicroBuild
 
-#include <string.h>
+#include "Platform.h"
 
 #include "Global.h"
 #include "Math.h"
 #include "Structures.h"
-#include "Renderer.h"
 #include "Map.h"
+#include "Renderer.h"
 
 int main()
 {
     MapSetup();
     
-    #if __IDE__
+#if __IDE__
     FWindowGuard WindowGuard;
     memset(GScreen, 80, sizeof(GScreen));
-    #endif
+#endif
     
     ST7735::Initialize();
     FSerial::Initialize<9600>();
     
-    #if !__IDE__ && DEBUG_SERIAL_PRINT_TICKS
+#if DEBUG_SERIAL_PRINT_TICKS
     FTimerFPS::Initialize();
-    #endif
+#endif
     
     while(true)
     {
@@ -55,29 +55,29 @@ int main()
                 
                 // Resolve....
                 {
-                    const FSector Sector = FSector::LoadFromFlash(&GSectors[FPlayer::CurrentSector]);
+                    const FSector Sector = LoadFromFlash(GSectors[FPlayer::CurrentSector]);
                     
                     for(int16 WallIndex = 0; WallIndex < Sector.WallCount; ++WallIndex)
                     {
-                        const FWall Wall = FWall::LoadFromFlash(&GWalls[Sector.WallStartIndex + WallIndex]);
+                        const FWall Wall = LoadFromFlash(GWalls[Sector.WallStartIndex + WallIndex]);
                         
                         if(!FMath::IsLineSegmentsIntersect(OldPlayerLocation, FPlayer::LocationXY, Wall.Point1, Wall.Point2)) continue;
                         
-                        #if __IDE__
-                        printf("Intersect Section: %i, Wall: %i\n", FPlayer::CurrentSector, WallIndex);
-                        #endif
+#if __IDE__
+                        printf("Intersect Sector: %i, Wall: %i\n", FPlayer::CurrentSector, WallIndex);
+#endif
                         
                         if(Wall.PortalNextSector == -1)
                         {
-                            #if !DEBUG_NO_COLLISION
+#if !DEBUG_NO_COLLISION
                             FPlayer::LocationXY = OldPlayerLocation;
-                            #endif
+#endif
                         }
                         else
                         {
                             if(Wall.PortalNextWall != -1) 
                             {
-                                const FWall TargetWall = FWall::LoadFromFlash(&GWalls[Wall.PortalNextWall]);
+                                const FWall TargetWall = LoadFromFlash(GWalls[Wall.PortalNextWall]);
                                 
                                 FPlayer::Angle = FPlayer::Angle + Wall.PortalAngleDelta;
                                 
@@ -90,7 +90,7 @@ int main()
                             }
                             
                             FPlayer::CurrentSector = Wall.PortalNextSector;
-                            FPlayer::LocationZ = FSector::LoadFromFlash(&GSectors[FPlayer::CurrentSector]).FloorZ + FPlayer::Height;
+                            FPlayer::LocationZ = LoadFromFlash(GSectors[FPlayer::CurrentSector]).FloorZ + FPlayer::Height;
                         }
                         
                         break;

@@ -1,0 +1,3 @@
+[submodule "Source/Advanced-AVR-Templates"]
+	path = Source/Advanced-AVR-Templates
+	url = https://github.com/RootTool0/Advanced-AVR-Templates

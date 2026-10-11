@@ -2,65 +2,12 @@
 
 #pragma once
 
-#include "AAT/Core/Aliases.h"
+#include "Platform.h"
 
 #include "Global.h"
 #include "Math.h"
 #include "Structures.h"
 #include "Map.h"
-
-#if __IDE__
-#include "QuickFixOrEmulatorForPC.h"
-#else
-#include "AAT/Delay.h"
-#include "AAT/Display/ST7735.h"
-#include "AAT/GPIO/Pin.h"
-#include "AAT/Communication/Serial.h"
-
-struct FEmptyST7735
-{
-    
-public:
-    static void Initialize() {}
-    static void SetWindow(const uint8 InX0, const uint8 InY0, const uint8 InX1, const uint8 InY1) {}
-    
-    static void Synchronize() {}
-    
-    static void BeginDraw() {}
-    static void Draw(const uint16 InColor) {}
-    static void DrawFast(const uint16 InColor) {}
-    static void EndDraw() {}
-    
-    static void FillScreen(const uint16 InColor) {}
-};
-
-struct FTimerFPS
-{
-    
-public:
-    static void Initialize() { TCCR1A = 0; TCCR1B = (1 << CS11) | (1 << CS10); }
-    static void Start() { TCNT1 = 0;  }
-    static void End()
-    {
-        uint16 Timer = TCNT1;
-            
-        FSerial::Send(( Timer / 10000)      + '0'); 
-        FSerial::Send(((Timer / 1000) % 10) + '0');
-        FSerial::Send(((Timer / 100) % 10)  + '0');  
-        FSerial::Send(((Timer / 10) % 10)   + '0');
-        FSerial::Send(( Timer % 10)         + '0');
-        FSerial::Send('\n');
-        FSerial::Send('\r');
-    }
-};
-
-#if DEBUG_NO_ST7355
-using ST7735 = FEmptyST7735;
-#else
-using ST7735 = TST7735<EPin::D6, EPin::D2>;
-#endif
-
-#endif
 
 struct FRenderTask
 {
@@ -77,20 +24,20 @@ struct FRenderTaskQueue
 {
     
 public:
-    static inline FRenderTask Queue[RENDER_TASK_QUEUE_ELEMENTS] = {};
+    static inline FRenderTask Queue[RENDERING_TASK_QUEUE_ELEMENTS] = {};
     
     static void Empty() { Head = 0; Tail = 0; }
     
     static bool AddTask(const FRenderTask&& InRenderTask)
     {
-        if(Head >= RENDER_TASK_QUEUE_ELEMENTS) return false;
+        if(Head >= RENDERING_TASK_QUEUE_ELEMENTS) return false;
         Queue[Head++] = InRenderTask;
         return true;
     }
     
     static int8 PopTaskIndex()
     {
-        return Tail >= Head || Tail >= RENDER_TASK_QUEUE_ELEMENTS ? -1 : Tail++;
+        return Tail >= Head || Tail >= RENDERING_TASK_QUEUE_ELEMENTS ? -1 : Tail++;
     }
 
 private:
@@ -104,15 +51,15 @@ struct FRenderer
 public:
     static void Render()
     {
-        #if __IDE__
+#if __IDE__
         if(!FWindow::IsRunning()) exit(0);
         FWindow::Render();
         memset(GScreen, 80, sizeof(GScreen));
-        #endif
+#endif
         
-        #if !__IDE__ && DEBUG_SERIAL_PRINT_TICKS
+#if DEBUG_SERIAL_PRINT_TICKS
         FTimerFPS::Start();
-        #endif
+#endif
         
         memset(ClipTop   , 0                , sizeof(ClipTop   ));
         memset(ClipBottom, WINDOW_HEIGHT - 1, sizeof(ClipBottom));
@@ -121,10 +68,9 @@ public:
         FRenderTaskQueue::Empty();
         FRenderTaskQueue::AddTask(FRenderTask { FPlayer::CurrentSector, 0, WINDOW_WIDTH - 1, FPlayer::LocationXY, FPlayer::Angle });
         
-        while(true)
+        int8 TaskIndex;
+        while((TaskIndex = FRenderTaskQueue::PopTaskIndex()) != -1)
         {
-            const int8 TaskIndex = FRenderTaskQueue::PopTaskIndex();
-            if(TaskIndex == -1) break;
             RenderSector(
                 FRenderTaskQueue::Queue[TaskIndex].SectorIndex,
                 FRenderTaskQueue::Queue[TaskIndex].MinX,
@@ -132,13 +78,11 @@ public:
                 FRenderTaskQueue::Queue[TaskIndex].CameraLocation,
                 FRenderTaskQueue::Queue[TaskIndex].CameraAngle
             );
-            
-            // RenderSector(FPlayer::CurrentSector, 0, WINDOW_WIDTH - 1, FPlayer::LocationXY, FPlayer::Angle);
         }
         
-        #if !__IDE__ && DEBUG_SERIAL_PRINT_TICKS
+#if DEBUG_SERIAL_PRINT_TICKS
         FTimerFPS::End();
-        #endif
+#endif
     }
 
 private:
@@ -146,7 +90,7 @@ private:
     static inline uint8 ClipTop   [WINDOW_WIDTH];
     static inline uint8 ClipBottom[WINDOW_WIDTH];
     
-    static inline FColor GPalette[] =
+    static inline constexpr FColor GPalette[] PROGMEM =
     {
         FColor(255, 0  , 0  ), //  0 - Красный
         FColor(255, 128, 0  ), //  1 - Оранжевый
@@ -202,7 +146,7 @@ private:
     {
         if(InMinX > InMaxX) return;
         
-        const FSector Sector = FSector::LoadFromFlash(&GSectors[InSectorIndex]);
+        const FSector Sector = LoadFromFlash(GSectors[InSectorIndex]);
         
         const FFixedFloat CosA = FMath::Cos(InCameraAngle);
         const FFixedFloat SinA = FMath::Sin(InCameraAngle);
@@ -210,7 +154,7 @@ private:
         
         for(int16 WallIndex = 0; WallIndex < Sector.WallCount; ++WallIndex)
         {
-            const FWall Wall = FWall::LoadFromFlash(&GWalls[Sector.WallStartIndex + WallIndex]);
+            const FWall Wall = LoadFromFlash(GWalls[Sector.WallStartIndex + WallIndex]);
             
             const FFloatVector2D D1 = FFloatVector2D(Wall.Point1) - InCameraLocation;
             const FFloatVector2D D2 = FFloatVector2D(Wall.Point2) - InCameraLocation;
@@ -248,8 +192,8 @@ private:
                     const int16 Ceil  = FMath::Lerp(Ceil1 , Ceil2 , Delta);
                     const int16 Floor = FMath::Lerp(Floor1, Floor2, Delta);
                     
-                    const FColor WallColor = X == X1 || X == X2 ? FColor::Black : GPalette[Wall.WallPaletteIndex];
-                    DrawWall(X, Ceil, Floor, WallColor, GPalette[Sector.CeilPaletteIndex], GPalette[Sector.FloorPaletteIndex]);
+                    const FColor WallColor = X == X1 || X == X2 ? FColor::Black : LoadFromFlash(GPalette[Wall.WallPaletteIndex]);
+                    DrawWall(X, Ceil, Floor, WallColor, LoadFromFlash(GPalette[Sector.CeilPaletteIndex]), LoadFromFlash(GPalette[Sector.FloorPaletteIndex]));
                     
                     ClipTop   [X] = FMath::Clamp<int16>(Ceil , ClipTop[X], ClipBottom[X]);
                     ClipBottom[X] = FMath::Clamp<int16>(Floor, ClipTop[X], ClipBottom[X]);
@@ -258,7 +202,7 @@ private:
             else // Portal
             {
                 // const FSector& NextSector = GSectors[Wall.PortalNextSector];
-                const FSector NextSector = FSector::LoadFromFlash(&GSectors[Wall.PortalNextSector]);
+                const FSector NextSector = LoadFromFlash(GSectors[Wall.PortalNextSector]);
                 
                 const int16 NextCeil1  = ((WINDOW_HEIGHT / 2) - (FFixedFloat(NextSector.CeilZ  - FPlayer::LocationZ) * (FovDistance / T1.Y)).ToInt());
                 const int16 NextFloor1 = ((WINDOW_HEIGHT / 2) - (FFixedFloat(NextSector.FloorZ - FPlayer::LocationZ) * (FovDistance / T1.Y)).ToInt());
@@ -277,14 +221,14 @@ private:
                     
                     // DrawPortal(X, Ceil, Floor, NextCeil, NextFloor, Sector.CeilZ, Sector.FloorZ, NextSector.CeilZ, NextSector.FloorZ, WallColor);
                     {
-                        const FColor WallColor = X == X1 || X == X2 ? FColor::Black : GPalette[Wall.WallPaletteIndex];
+                        const FColor WallColor = X == X1 || X == X2 ? FColor::Black : LoadFromFlash(GPalette[Wall.WallPaletteIndex]);
                         const int16 TopEnd = (Sector.CeilZ > NextSector.CeilZ ? NextCeil : Ceil) - 1;
                         ST7735::SetWindow(X, ClipTop[X], X, TopEnd);
                         ST7735::BeginDraw();
                         {
                             for(int16 Y = ClipTop[X]; Y <= TopEnd; ++Y)
                             {
-                                if(Y <= Ceil) ST7735::DrawFast(GPalette[Sector.CeilPaletteIndex].Data);
+                                if(Y <= Ceil) ST7735::DrawFast(LoadFromFlash(GPalette[Sector.CeilPaletteIndex]).Data);
                                 else
                                 {
                                     const bool bBlack = (Y == Ceil + 1 || Y == TopEnd) && Sector.FloorZ != NextSector.FloorZ;
@@ -300,7 +244,7 @@ private:
                         {
                             for(int16 Y = BottomStart; Y <= ClipBottom[X]; ++Y)
                             {
-                                if(Y >= Floor) ST7735::DrawFast(GPalette[Sector.FloorPaletteIndex].Data);
+                                if(Y >= Floor) ST7735::DrawFast(LoadFromFlash(GPalette[Sector.FloorPaletteIndex]).Data);
                                 else
                                 {
                                     const bool bBlack = (Y == BottomStart  || Y == Floor - 1) && Sector.FloorZ != NextSector.FloorZ;
@@ -320,9 +264,9 @@ private:
                     if(FRenderTaskQueue::AddTask({ Wall.PortalNextSector, StartX, EndX, InCameraLocation, InCameraAngle }))
                         continue;
                 }
-                else if(NonEuclideanPortalRecursion++ <= NON_EUCLIDEAN_PORTAL_MAX_RECURSION)  // Non-Euclidean Portal
+                else if(NonEuclideanPortalRecursion++ <= RENDERING_NON_EUCLIDEAN_PORTAL_MAX_RECURSION)  // Non-Euclidean Portal
                 {
-                    const FWall TargetWall = FWall::LoadFromFlash(&GWalls[Wall.PortalNextWall]);
+                    const FWall TargetWall = LoadFromFlash(GWalls[Wall.PortalNextWall]);
                     const FAngle VirtualAngle = InCameraAngle + Wall.PortalAngleDelta;
                     
                     const FFloatVector2D PortalCenter = FFloatVector2D(FFloatVector2D(      Wall.Point1) + FFloatVector2D(      Wall.Point2)).DivByTwo();

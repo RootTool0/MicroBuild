@@ -8,23 +8,13 @@ struct FMath
 {
     
 public:
-    template<typename T>
-    static T Min(const T InA, const T InB) { return InA < InB ? InA : InB; }
-    
-    template<typename T>
-    static T Max(const T InA, const T InB) { return InA > InB ? InA : InB; }
-    
-    template<typename T>
-    static T Min3(const T InA, const T InB, const T InC) { return Min(Min(InA, InB), InC); }
-    
-    template<typename T>
-    static T Max3(const T InA, const T InB, const T InC) { return Max(Max(InA, InB), InC); }
-    
-    template<typename T>
-    static T Clamp(const T InValue, const T InMin, const T InMax) { return Min(Max(InValue, InMin), InMax); }
-    
-    template<typename T>
-    static T Lerp(const T InA, const T InB, const FFixedFloat InAlpha) { return static_cast<T>((FFixedFloat(InA) + FFixedFloat(InB - InA) * InAlpha).ToInt()); }
+    template<typename T> static constexpr T Min(const T InA, const T InB) { return InA < InB ? InA : InB; }
+    template<typename T> static constexpr T Max(const T InA, const T InB) { return InA > InB ? InA : InB; }
+    template<typename T> static constexpr T Min3(const T InA, const T InB, const T InC) { return Min(Min(InA, InB), InC); }
+    template<typename T> static constexpr T Max3(const T InA, const T InB, const T InC) { return Max(Max(InA, InB), InC); }
+    template<typename T> static constexpr T Clamp(const T InValue, const T InMin, const T InMax) { return Min(Max(InValue, InMin), InMax); }
+    template<typename T> static constexpr T Abs(const T InF) { return InF < 0 ? -InF : InF; }
+    template<typename T> static constexpr T Lerp(const T InA, const T InB, const FFixedFloat InAlpha) { return static_cast<T>((FFixedFloat(InA) + FFixedFloat(InB - InA) * InAlpha).ToInt()); }
     
     template<typename T>
     static void Swap(T& InA, T& InB)
@@ -35,9 +25,6 @@ public:
     }
     
     static FFixedFloat::FFixedFloatInt Floor(const FFixedFloat InF) { return InF.ToInt(); }
-    
-    template<typename T>
-    static T Abs(const T InF) { return InF < 0 ? -InF : InF; }
     
     static FFixedFloat Abs(const FFixedFloat InF) { return InF.Raw < 0 ? FFixedFloat::FromRaw(-InF.Raw) : InF; }
     

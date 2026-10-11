@@ -2,7 +2,7 @@
 
 #pragma once
 
-static inline constexpr FWall GWalls[] PROGMEM =
+inline constexpr FWall GWalls[] PROGMEM =
 {
     // 0
     { FIntVector2D(-24, -32), FIntVector2D(-24, +32), 10, -1 , -1 , 0 },
@@ -95,7 +95,7 @@ static inline constexpr FWall GWalls[] PROGMEM =
     { FIntVector2D(+0 , +0 ), FIntVector2D(+0 , +16), 6 , -1 , -1 , 0 },
 };
 
-static inline constexpr FSector GSectors[] PROGMEM =
+inline constexpr FSector GSectors[] PROGMEM =
 {
     { 0, 20, 0 , 4, 0, 3 },
     { 0, 20, 4 , 4, 1, 4 },
@@ -113,3 +113,5 @@ static inline constexpr FSector GSectors[] PROGMEM =
     { 0, 20, 52, 4, 1, 4 },
     { 0, 20, 56, 4, 1, 4 },
 };
+
+inline void MapSetup() { FPlayer::LocationXY = FFloatVector2D(0, 0); FPlayer::Angle = 0; }

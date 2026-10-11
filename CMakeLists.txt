@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.18)
 set(AVR_GCC_PATH "C:/Dev/avr-gcc-15.2.0-x64-windows")
 set(MCU_NAME "atmega328p")
 set(MCU_DUDE "m328p")
-set(COM_PORT "COM12")
+set(COM_PORT "COM4")
 set(F_CPU "16000000UL")
 
 # Setup

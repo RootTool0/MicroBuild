@@ -2,7 +2,7 @@
 
 #pragma once
 
-static inline constexpr FWall GWalls[] PROGMEM =
+inline constexpr FWall GWalls[] PROGMEM =
 {
     // 0
     { FIntVector2D(-40, -40), FIntVector2D(-40, +40), 5 , -1 , -1 , 0 },
@@ -25,7 +25,7 @@ static inline constexpr FWall GWalls[] PROGMEM =
     // 3
     { FIntVector2D(+40, -40), FIntVector2D(-40, -40), 5 , -1 , -1 , 0 },
     { FIntVector2D(+10, -10), FIntVector2D(+40, -40), 5 , +2 , -1 , 0 },
-    { FIntVector2D(-10, -10), FIntVector2D(+10, -10), 7 , +6 , +26 , 0 },
+    { FIntVector2D(-10, -10), FIntVector2D(+10, -10), 7 , +6 , +26, 0 },
     { FIntVector2D(-40, -40), FIntVector2D(-10, -10), 5 , +0 , -1 , 0 },
     
     // 4
@@ -63,7 +63,7 @@ static inline constexpr FWall GWalls[] PROGMEM =
     { FIntVector2D(+0 , -20), FIntVector2D(-20, +0 ), 13, +7 , -1 , 0 },
 };
 
-static inline constexpr FSector GSectors[] PROGMEM =
+inline constexpr FSector GSectors[] PROGMEM =
 {
     { 0, 80, 0 , 4, 5 , 3  },
     { 0, 80, 4 , 4, 5 , 3  },
@@ -78,4 +78,4 @@ static inline constexpr FSector GSectors[] PROGMEM =
     { 4, 14, 36, 4, 14, 14 },
 };
 
-static inline void MapSetup() { FPlayer::LocationXY = FFloatVector2D(-38, 0); FPlayer::Angle = 192; }
+inline void MapSetup() { FPlayer::LocationXY = FFloatVector2D(-38, 0); FPlayer::Angle = 192; }
