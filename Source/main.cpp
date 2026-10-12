@@ -48,10 +48,10 @@ int main()
             {
                 const FFloatVector2D OldPlayerLocation = FPlayer::LocationXY;
                 
-                /**/ if(Char == 'w') FPlayer::LocationXY += FFloatVector2D(-FMath::Sin(FPlayer::Angle), +FMath::Cos(FPlayer::Angle)).MulByTwo(); // .DivByTwo().DivByTwo();
-                else if(Char == 's') FPlayer::LocationXY += FFloatVector2D(+FMath::Sin(FPlayer::Angle), -FMath::Cos(FPlayer::Angle)).MulByTwo(); // .DivByTwo().DivByTwo();
-                else if(Char == 'a') FPlayer::LocationXY += FFloatVector2D(-FMath::Cos(FPlayer::Angle), -FMath::Sin(FPlayer::Angle)).MulByTwo(); // .DivByTwo().DivByTwo();
-                else if(Char == 'd') FPlayer::LocationXY += FFloatVector2D(+FMath::Cos(FPlayer::Angle), +FMath::Sin(FPlayer::Angle)).MulByTwo(); // .DivByTwo().DivByTwo();
+                /**/ if(Char == 'w') FPlayer::LocationXY += FFloatVector2D(-FMath::Sin(FPlayer::Angle), +FMath::Cos(FPlayer::Angle)).MulByTwo().DivByTwo().DivByTwo();
+                else if(Char == 's') FPlayer::LocationXY += FFloatVector2D(+FMath::Sin(FPlayer::Angle), -FMath::Cos(FPlayer::Angle)).MulByTwo().DivByTwo().DivByTwo();
+                else if(Char == 'a') FPlayer::LocationXY += FFloatVector2D(-FMath::Cos(FPlayer::Angle), -FMath::Sin(FPlayer::Angle)).MulByTwo().DivByTwo().DivByTwo();
+                else if(Char == 'd') FPlayer::LocationXY += FFloatVector2D(+FMath::Cos(FPlayer::Angle), +FMath::Sin(FPlayer::Angle)).MulByTwo().DivByTwo().DivByTwo();
                 
                 // Resolve....
                 {
