@@ -40,12 +40,14 @@ file(GENERATE OUTPUT "../Upload.bat" CONTENT
 setlocal enabledelayedexpansion
 
 echo [1/5] Compiling...
-\"${AVR_GCC_PATH}/bin/avr-gcc.exe\" -std=c++17 -Os -flto ^
-    -fno-exceptions -fno-rtti -fno-threadsafe-statics -ffunction-sections -fdata-sections -Wl,--gc-sections ^
+\"${AVR_GCC_PATH}/bin/avr-gcc.exe\" -std=c++17 ^
+    -Os -flto -ffast-math -fno-move-loop-invariants -fgcse-las -fgcse-after-reload -fipa-cp ^
+    -fno-exceptions -fno-rtti -fno-threadsafe-statics -ffunction-sections -fdata-sections  ^
     -mmcu=${MCU_NAME} -DF_CPU=${F_CPU} ^
     -I\"../Source\" ${SOURCE_FILES_AVR_STRING} ^
-    -o \"${PROJECT_NAME}.elf\" ^
-    -Wl,--gc-sections -Wl,-Map=${PROJECT_NAME}.map
+    -o \"${PROJECT_NAME}.elf\" -Wl,--gc-sections ^
+    -Os -flto -ffast-math -fno-move-loop-invariants -fgcse-las -fgcse-after-reload -fipa-cp ^
+    -Wl,-Map=${PROJECT_NAME}.map
 
 if %errorlevel% neq 0 (
     echo ERROR: Compilation failed!

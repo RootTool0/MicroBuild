@@ -6,15 +6,14 @@ struct FColor
 {
     
 public:
-    uint16 Data = 0;
+    uint8 Data = 0;
     
     constexpr FColor() = default;
     constexpr FColor(const uint16 InData) : Data(InData) {}
-    constexpr FColor(const uint8 InR, const uint8 InG, const uint8 InB) : Data(((uint16)(InR & 0xF8) << 8) | ((uint16)(InG & 0xFC) << 3) | ((uint16)(InB & 0xF8) >> 3)) {}
+//  constexpr FColor(const uint8 InR, const uint8 InG, const uint8 InB) : Data(((uint16)(InR & 0xF8) << 8) | ((uint16)(InG & 0xFC) << 3) | ((uint16)(InB & 0xF8) >> 3)) {}
+    constexpr FColor(const uint8 InR, const uint8 InG, const uint8 InB) : Data(InR) {}
     
     static const FColor Black;
-    static const FColor Ceil;
-    static const FColor Floor;
 };
 
 constexpr FColor FColor::Black = FColor(0, 0, 0);
@@ -75,13 +74,15 @@ inline constexpr FFixedFloat FFixedFloat::Zero           = FFixedFloat(0.0f);
 inline constexpr FFixedFloat FFixedFloat::ZeroPointFive  = FFixedFloat(0.5f);
 inline constexpr FFixedFloat FFixedFloat::One            = FFixedFloat(1.0f);
 inline constexpr FFixedFloat FFixedFloat::OnePointFive   = FFixedFloat(1.5f); 
-inline constexpr FFixedFloat FFixedFloat::ThreePointFive = FFixedFloat(3.5f); 
+inline constexpr FFixedFloat FFixedFloat::ThreePointFive = FFixedFloat(3.5f);
 
 template<typename T>
 struct TVector2D
 {
     
 public:
+    using ScalarType = T;
+    
     T X;
     T Y;
     
@@ -149,10 +150,17 @@ struct FWall
     
 public:
     FIntVector2D Point1, Point2;
-    uint8 WallPaletteIndex;
+    uint8 WallPaletteIndex; // Used as color
     int8 PortalNextSector;
     int8 PortalNextWall;
     FAngle PortalAngleDelta;
+    
+    FORCEINLINE static FIntVector2D GetPoint1           (const FWall& InFlashWall);
+    FORCEINLINE static FIntVector2D GetPoint2           (const FWall& InFlashWall);
+    FORCEINLINE static uint8        GetWallPaletteIndex (const FWall& InFlashWall);
+    FORCEINLINE static int8         GetPortalNextSector (const FWall& InFlashWall);
+    FORCEINLINE static int8         GetPortalNextWall   (const FWall& InFlashWall);
+    FORCEINLINE static FAngle       GetPortalAngleDelta (const FWall& InFlashWall);
 };
 
 struct FSector
@@ -163,6 +171,14 @@ public:
     int8 CeilZ;
     uint8 WallStartIndex;
     uint8 WallCount;
-    uint8 CeilPaletteIndex;
-    uint8 FloorPaletteIndex;
+    uint8 CeilPaletteIndex;  // Used as color
+    uint8 FloorPaletteIndex; // Used as color
+    
+    FORCEINLINE static int8  GetFloorZ            (const FSector& InFlashSector);
+    FORCEINLINE static int8  GetCeilZ             (const FSector& InFlashSector);
+    FORCEINLINE static uint8 GetWallStartIndex    (const FSector& InFlashSector);
+    FORCEINLINE static uint8 GetWallCount         (const FSector& InFlashSector);
+    FORCEINLINE static uint8 GetCeilPaletteIndex  (const FSector& InFlashSector);
+    FORCEINLINE static uint8 GetFloorPaletteIndex (const FSector& InFlashSector);
 };
+

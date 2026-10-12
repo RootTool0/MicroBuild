@@ -21,7 +21,8 @@ public:
     uint8 _ = 0xFF;
     
     constexpr FPixel() = default;
-    constexpr FPixel(const FColor InColor) : B((InColor.Data & 0x1F) * 255 / 31), G(((InColor.Data >> 5) & 0x3F) * 255 / 63), R(((InColor.Data >> 11) & 0x1F) * 255 / 31), _(0xFF) {}
+    constexpr FPixel(const uint8 InR, const uint8 InG, const uint8 InB) : B(InB), G(InG), R(InR), _(0xFF) {}
+//  constexpr FPixel(const FColor InColor) : B((InColor.Data & 0x1F) * 255 / 31), G(((InColor.Data >> 5) & 0x3F) * 255 / 63), R(((InColor.Data >> 11) & 0x1F) * 255 / 31), _(0xFF) {}
 };
 
 static inline uint8 GKey = 0;
@@ -50,48 +51,25 @@ public:
     FORCEINLINE static void Memcpy(void* OutDest, const void* InFlashAddr, const uint16 InSize) { memcpy(OutDest, InFlashAddr, InSize); }
 };
 
-struct ST7735
+struct FDisplaySDL2
 {
-    static void Initialize() {}
-    static void SetWindow(const uint8 InX0, const uint8 InY0, const uint8 InX1, const uint8 InY1)
-    {
-        XS = InX0; XE = InX1;
-        YS = InY0; YE = InY1;
-        CurrentX = XS;
-        CurrentY = YS;
-    }
+    FORCEINLINE static void Initialize() {}
+    FORCEINLINE static void SetWindow(const uint8 InX0, const uint8 InY0, const uint8 InX1, const uint8 InY1) {}
     
-    static void BeginDraw() {}
-    static void EndDraw() {}
+    FORCEINLINE static void BeginDraw() {}
+    FORCEINLINE static void EndDraw() {}
     
-    static void Draw(const uint16 InColor)
+    FORCEINLINE static void Draw(const uint8 InX, const uint8 InY, const FColor InColor)
     { 
-        FColor RawColor;
-        RawColor.Data = InColor;
-        
-        if(CurrentX < WINDOW_WIDTH && CurrentY < WINDOW_HEIGHT)
-        {
-            GScreen[WINDOW_WIDTH * CurrentY + CurrentX] = RawColor;
-            // FWindow::Render();
-            // SDL_Delay(2);
-        }
-        
-        if(++CurrentX > XE)
-        {
-            CurrentX = XS;
-            if(++CurrentY > YE) CurrentY = YS;
-        }
+        GScreen[WINDOW_WIDTH * InY + InX] = FPixel(0, InColor.Data == 0 ? 255 : 0, InColor.Data == 0 ? 255 : 0);
+        // FWindow::Render();
+        // SDL_Delay(2);
     }
     
-    static void DrawFast(const uint16 InColor) { Draw(InColor); }
-
-private:
-    static inline uint8 XS = 0, XE = WINDOW_WIDTH - 1;
-    static inline uint8 YS = 0, YE = WINDOW_HEIGHT - 1;
-    
-    static inline uint8 CurrentX = 0;
-    static inline uint8 CurrentY = 0;
+    FORCEINLINE static void Render() {}
 };
+
+using FDisplay = FDisplaySDL2;
 
 struct FWindow
 {
@@ -189,7 +167,7 @@ private:
 
 class FWindowGuard
 {
-
+    
 public:
     FWindowGuard() { FWindow::Initialize(); }
     ~FWindowGuard() { FWindow::Deinitialize(); }
@@ -200,27 +178,46 @@ public:
 #include "Advanced-AVR-Templates/Communication/Serial.h"
 #include "Advanced-AVR-Templates/Memory/PROGMEM.h"
 
-#if DEBUG_NO_ST7355
-struct ST7735
+#if DEBUG_NO_DISPLAY
+#else
+#include "Advanced-AVR-Templates/Display/OLED.h"
+
+struct FDisplayOLED
 {
     
 public:
-    static void Initialize() {}
-    static void SetWindow(const uint8 InX0, const uint8 InY0, const uint8 InX1, const uint8 InY1) {}
+    using OLED = TOLED<0x3c>;
     
-    static void Synchronize() {}
+    FORCEINLINE static void Initialize() 
+    {
+        OLED::Initialize();
+        memset(FrameBuffer, 0, sizeof(FrameBuffer));
+    }
     
-    static void BeginDraw() {}
-    static void Draw(const uint16 InColor) {}
-    static void DrawFast(const uint16 InColor) {}
-    static void EndDraw() {}
+    FORCEINLINE static void SetWindow(const uint8 InX0, const uint8 InY0, const uint8 InX1, const uint8 InY1) { }
     
-    static void FillScreen(const uint16 InColor) {}
-};
-#else
-#include "Advanced-AVR-Templates/Display/ST7735.h"
+    FORCEINLINE static void BeginDraw() {}
+    FORCEINLINE static void EndDraw() {}
+    
+    FORCEINLINE static void Draw(const uint8 InX, const uint8 InY, const FColor InColor) 
+    {
+        const uint16 BufferIndex = InX + (InY / 8) * WINDOW_WIDTH;
+        const uint8 BitMask = (1 << (InY % 8));
+        
+        FrameBuffer[BufferIndex] &= ~BitMask;
+        if(InColor.Data == 0) FrameBuffer[BufferIndex] |= BitMask;
+    }
+    
+    FORCEINLINE static void Render() 
+    {
+        OLED::FillFromBuffer(FrameBuffer);
+    }
 
-using ST7735 = TST7735<EPin::D2, EPin::D3>;
+private:
+    static inline uint8 FrameBuffer[1024] = {};
+};
+
+using FDisplay = FDisplayOLED;
 #endif
 
 #endif
@@ -269,6 +266,6 @@ public:
     }
 };
 
-inline FColor LoadFromFlash(const FColor& InColor) { FColor Color; FPROGMEM::Memcpy(&Color, &InColor, sizeof(FColor)); return Color; }
+// inline FColor LoadFromFlash(const FColor& InColor) { FColor Color; FPROGMEM::Memcpy(&Color, &InColor, sizeof(FColor)); return Color; }
 inline FWall LoadFromFlash(const FWall& InWall) { FWall Wall; FPROGMEM::Memcpy(&Wall, &InWall, sizeof(FWall)); return Wall; }
 inline FSector LoadFromFlash(const FSector& InSector) { FSector Sector; FPROGMEM::Memcpy(&Sector, &InSector, sizeof(FSector)); return Sector; }

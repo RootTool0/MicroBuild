@@ -5,7 +5,7 @@
 inline const FWall GWalls[] PROGMEM =
 {
     // 0
-    { FIntVector2D(-20, -20), FIntVector2D(-20, -10), 0, -1, -1, 0   },
+    { FIntVector2D(-20, -20), FIntVector2D(-20, -10), 1, -1, -1, 0   },
     { FIntVector2D(-20, -10), FIntVector2D(-20,  10), 1, +1, -1, 0   },
     { FIntVector2D(-20, +10), FIntVector2D(-20,  20), 4, -1, -1, 0   },
     { FIntVector2D(-20, +20), FIntVector2D(-10,  20), 5, -1, -1, 0   },

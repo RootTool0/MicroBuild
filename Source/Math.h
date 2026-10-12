@@ -41,6 +41,8 @@ public:
     
     static bool IsLineSegmentsIntersect(const FFloatVector2D A, const FFloatVector2D B, const FFloatVector2D C, const FFloatVector2D D)
     {
+        
+        /*
         const FFixedFloat Denominator = (B.X - A.X) * (D.Y - C.Y) - (B.Y - A.Y) * (D.X - C.X);
         if(Denominator == FFixedFloat::Zero) return false;
         
@@ -48,6 +50,31 @@ public:
         const FFixedFloat I = ((C.X - A.X) * (B.Y - A.Y) - (C.Y - A.Y) * (B.X - A.X)) / Denominator;
         
         return U >= FFixedFloat::Zero && U <= FFixedFloat::One && I >= FFixedFloat::Zero && I <= FFixedFloat::One;
+        */
+        
+        // Считаем знаменатель и числители как 64-битные сырые целые (Raw), чтобы избежать переполнения при умножении
+        using Raw64 = int64;
+    
+        const Raw64 DenomRaw = (static_cast<Raw64>(B.X.Raw - A.X.Raw) * (D.Y.Raw - C.Y.Raw) - static_cast<Raw64>(B.Y.Raw - A.Y.Raw) * (D.X.Raw - C.X.Raw)) >> 16;
+        if (DenomRaw == 0) return false; // Линии параллельны
+
+        const Raw64 U_NumRaw = (static_cast<Raw64>(C.X.Raw - A.X.Raw) * (D.Y.Raw - C.Y.Raw) - static_cast<Raw64>(C.Y.Raw - A.Y.Raw) * (D.X.Raw - C.X.Raw)) >> 16;
+        const Raw64 I_NumRaw = (static_cast<Raw64>(C.X.Raw - A.X.Raw) * (B.Y.Raw - A.Y.Raw) - static_cast<Raw64>(C.Y.Raw - A.Y.Raw) * (B.X.Raw - A.X.Raw)) >> 16;
+
+        // Условие пересечения: 0 <= (Num / Denom) <= 1
+        // Чтобы избавиться от деления, проверяем знаки:
+        if (DenomRaw > 0)
+        {
+            if (U_NumRaw < 0 || U_NumRaw > DenomRaw) return false;
+            if (I_NumRaw < 0 || I_NumRaw > DenomRaw) return false;
+        }
+        else // DenomRaw < 0
+        {
+            if (U_NumRaw > 0 || U_NumRaw < DenomRaw) return false;
+            if (I_NumRaw > 0 || I_NumRaw < DenomRaw) return false;
+        }
+
+        return true;
     }
 
 private:
