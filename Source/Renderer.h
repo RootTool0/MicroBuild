@@ -148,7 +148,7 @@ private:
                 const int16 NextCeil  = bIsPortal ? FMath::Lerp(NextCeil1 , NextCeil2 , Delta) : Ceil ;
                 const int16 NextFloor = bIsPortal ? FMath::Lerp(NextFloor1, NextFloor2, Delta) : Floor;
                 
-                const FColor WallColor = X == X1 || X == X2 ? FColor::Black : Wall.WallPaletteIndex;
+                const FColor WallColor = X == X1 || X == X2 ? FColor::Outline : Wall.WallPaletteIndex;
                 
                 if(!bIsPortal) // Wall
                 {
@@ -160,9 +160,9 @@ private:
                     FDisplay::BeginDraw();
                     {
                         for(int16 Y = ClipTop[X]; Y <= TopY - 1; ++Y) FDisplay::Draw(X, Y, Sector.CeilPaletteIndex);
-                        FDisplay::Draw(X, TopY, FColor::Black);
+                        FDisplay::Draw(X, TopY, FColor::Outline);
                         for(int16 Y = TopY + 1; Y <= BottomY - 1; ++Y) FDisplay::Draw(X, Y, WallColor);
-                        FDisplay::Draw(X, BottomY, FColor::Black);
+                        FDisplay::Draw(X, BottomY, FColor::Outline);
                         for(int16 Y = BottomY + 1; Y <= ClipBottom[X]; ++Y) FDisplay::Draw(X, Y, Sector.FloorPaletteIndex);
                     }
                     FDisplay::EndDraw();
@@ -176,7 +176,7 @@ private:
                         for(int16 Y = ClipTop[X]; Y <= TopEnd; ++Y)
                         {
                             if(Y <= Ceil) FDisplay::Draw(X, Y, Sector.CeilPaletteIndex);
-                            else FDisplay::Draw(X, Y, ((Y == Ceil + 1 || Y == TopEnd) && Sector.FloorZ != NextSector.FloorZ) ? FColor::Black : WallColor);
+                            else FDisplay::Draw(X, Y, ((Y == Ceil + 1 || Y == TopEnd) && Sector.FloorZ != NextSector.FloorZ) ? FColor::Outline : WallColor);
                         }
                     }
                     FDisplay::EndDraw();
@@ -188,7 +188,7 @@ private:
                         for(int16 Y = BottomStart; Y <= ClipBottom[X]; ++Y)
                         {
                             if(Y >= Floor) FDisplay::Draw(X, Y, Sector.FloorPaletteIndex);
-                            else FDisplay::Draw(X, Y, ((Y == BottomStart || Y == Floor - 1) && Sector.FloorZ != NextSector.FloorZ) ? FColor::Black : WallColor);
+                            else FDisplay::Draw(X, Y, ((Y == BottomStart || Y == Floor - 1) && Sector.FloorZ != NextSector.FloorZ) ? FColor::Outline : WallColor);
                         }
                     }
                     FDisplay::EndDraw();
@@ -238,13 +238,13 @@ private:
         }
     }
     
-    static void DrawNoTexture(const uint8 InX, const FColor InColor = FColor(255, 0, 255))
+    static void DrawNoTexture(const uint8 InX, const FColor InColor = FColor(0b10101010))
     {
         FDisplay::SetWindow(InX, ClipTop[InX], InX, ClipBottom[InX]);
         FDisplay::BeginDraw();
         {
             bool bBlack = (InX & 1) == 0;
-            for(int16 Y = ClipTop[InX]; Y <= ClipBottom[InX]; ++Y) { FDisplay::Draw(InX, Y, bBlack ? FColor::Black : InColor); bBlack = !bBlack; }
+            for(int16 Y = ClipTop[InX]; Y <= ClipBottom[InX]; ++Y) { FDisplay::Draw(InX, Y, bBlack ? FColor::Outline : InColor); bBlack = !bBlack; }
         }
         FDisplay::EndDraw();
     }

@@ -9,14 +9,12 @@ public:
     uint8 Data = 0;
     
     constexpr FColor() = default;
-    constexpr FColor(const uint16 InData) : Data(InData) {}
-//  constexpr FColor(const uint8 InR, const uint8 InG, const uint8 InB) : Data(((uint16)(InR & 0xF8) << 8) | ((uint16)(InG & 0xFC) << 3) | ((uint16)(InB & 0xF8) >> 3)) {}
-    constexpr FColor(const uint8 InR, const uint8 InG, const uint8 InB) : Data(InR) {}
+    constexpr FColor(const uint8 InData) : Data(InData) {}
     
-    static const FColor Black;
+    static const FColor Outline;
 };
 
-constexpr FColor FColor::Black = FColor(0, 0, 0);
+constexpr FColor FColor::Outline = FColor(0xFF);
 
 struct FFixedFloat
 {

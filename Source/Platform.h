@@ -8,6 +8,8 @@
 
 #include <string.h>
 
+FORCEINLINE bool Screentone(const uint8 InX, const uint8 InY, const FColor InColor);
+
 #if __IDE__
 #include <SDL.h>
 
@@ -26,7 +28,39 @@ public:
 };
 
 static inline uint8 GKey = 0;
+static inline bool bGPinButtonF = false;
+static inline bool bGPinButtonB = false;
+static inline bool bGPinButtonL = false;
+static inline bool bGPinButtonR = false;
 static inline FPixel GScreen[WINDOW_WIDTH * WINDOW_HEIGHT];
+
+struct PinButtonF
+{
+    FORCEINLINE static void InitializeAsInput() {}
+    FORCEINLINE static void EnablePullUp() {}
+    FORCEINLINE static bool Get() { return bGPinButtonF; }
+};
+
+struct PinButtonB
+{
+    FORCEINLINE static void InitializeAsInput() {}
+    FORCEINLINE static void EnablePullUp() {}
+    FORCEINLINE static bool Get() { return bGPinButtonB; }
+};
+
+struct PinButtonL
+{
+    FORCEINLINE static void InitializeAsInput() {}
+    FORCEINLINE static void EnablePullUp() {}
+    FORCEINLINE static bool Get() { return bGPinButtonL; }
+};
+
+struct PinButtonR
+{
+    FORCEINLINE static void InitializeAsInput() {}
+    FORCEINLINE static void EnablePullUp() {}
+    FORCEINLINE static bool Get() { return bGPinButtonR; }
+};
 
 struct FSerial
 {
@@ -60,8 +94,9 @@ struct FDisplaySDL2
     FORCEINLINE static void EndDraw() {}
     
     FORCEINLINE static void Draw(const uint8 InX, const uint8 InY, const FColor InColor)
-    { 
-        GScreen[WINDOW_WIDTH * InY + InX] = FPixel(0, InColor.Data == 0 ? 255 : 0, InColor.Data == 0 ? 255 : 0);
+    {
+        const bool bLit = Screentone(InX, InY, InColor);
+        GScreen[WINDOW_WIDTH * InY + InX] = FPixel(0, bLit ? 255 : 0, bLit ? 255 : 0);
         // FWindow::Render();
         // SDL_Delay(2);
     }
@@ -142,10 +177,10 @@ public:
         else if(KeyState[SDL_SCANCODE_R]) GKey = 'r';
         else if(KeyState[SDL_SCANCODE_F]) GKey = 'f';
         
-        else if(KeyState[SDL_SCANCODE_W]) GKey = 'w';
-        else if(KeyState[SDL_SCANCODE_S]) GKey = 's';
-        else if(KeyState[SDL_SCANCODE_A]) GKey = 'a';
-        else if(KeyState[SDL_SCANCODE_D]) GKey = 'd';
+        else if(bGPinButtonF = KeyState[SDL_SCANCODE_W]; bGPinButtonF) GKey = 'w';
+        else if(bGPinButtonB = KeyState[SDL_SCANCODE_S]; bGPinButtonB) GKey = 's';
+        else if(bGPinButtonL = KeyState[SDL_SCANCODE_A]; bGPinButtonL) GKey = 'a';
+        else if(bGPinButtonR = KeyState[SDL_SCANCODE_D]; bGPinButtonR) GKey = 'd';
         else GKey = 0;
         
         return true;
@@ -178,6 +213,11 @@ public:
 #include "Advanced-AVR-Templates/Communication/Serial.h"
 #include "Advanced-AVR-Templates/Memory/PROGMEM.h"
 
+using PinButtonF = TPin<EPin::D2>;
+using PinButtonB = TPin<EPin::D3>;
+using PinButtonL = TPin<EPin::D6>;
+using PinButtonR = TPin<EPin::D5>;
+
 #if DEBUG_NO_DISPLAY
 #else
 #include "Advanced-AVR-Templates/Display/OLED.h"
@@ -204,8 +244,9 @@ public:
         const uint16 BufferIndex = InX + (InY / 8) * WINDOW_WIDTH;
         const uint8 BitMask = (1 << (InY % 8));
         
-        FrameBuffer[BufferIndex] &= ~BitMask;
-        if(InColor.Data == 0) FrameBuffer[BufferIndex] |= BitMask;
+        const bool bLit = Screentone(InX, InY, InColor);
+        if(bLit) FrameBuffer[BufferIndex] |= BitMask;
+        else FrameBuffer[BufferIndex] &= ~BitMask;
     }
     
     FORCEINLINE static void Render() 
