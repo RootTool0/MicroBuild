@@ -3,13 +3,12 @@
 #pragma once
 
 #include "Advanced-AVR-Templates/Core/Aliases.h"
+#include "Global.h"
 #include "Structures.h"
 
 #include <string.h>
 
 #if __IDE__
-#include "Global.h"
-
 #include <SDL.h>
 
 struct FPixel
@@ -111,7 +110,7 @@ public:
         SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
         SDL_SetRelativeMouseMode(SDL_TRUE);
         
-        WindowHandle = SDL_CreateWindow("Cool 3D", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * WINDOW_SCALE, WINDOW_HEIGHT * WINDOW_SCALE, SDL_WINDOW_SHOWN);
+        WindowHandle = SDL_CreateWindow("MicroBuild", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * WINDOW_SCALE, WINDOW_HEIGHT * WINDOW_SCALE, SDL_WINDOW_SHOWN);
         if(!WindowHandle)
         {
             printf("Window Initialization error: %s\n", SDL_GetError());

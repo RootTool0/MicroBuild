@@ -97,7 +97,7 @@ inline constexpr FWall GWalls[] PROGMEM =
 
 inline constexpr FSector GSectors[] PROGMEM =
 {
-    { 0, 20, 0 , 4, 0, 3 },
+    { 0, 20, 0 , 4, 1, 4 },
     { 0, 20, 4 , 4, 1, 4 },
     { 0, 20, 8 , 4, 1, 4 },
     { 0, 20, 12, 4, 1, 4 },
