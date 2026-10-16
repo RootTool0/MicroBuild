@@ -18,10 +18,10 @@ file(GLOB_RECURSE SOURCE_FILES_IDE CONFIGURE_DEPENDS "Source/*")
 add_executable(${PROJECT_NAME} ${SOURCE_FILES_IDE})
 
 # Package (IDE)
-find_package(SDL2 CONFIG REQUIRED)
+# find_package(SDL2 CONFIG REQUIRED)
 
-target_link_libraries(MicroBuild PRIVATE SDL2::SDL2)
-target_compile_definitions(MicroBuild PRIVATE SDL_MAIN_HANDLED)
+# target_link_libraries(MicroBuild PRIVATE SDL2::SDL2)
+# target_compile_definitions(MicroBuild PRIVATE SDL_MAIN_HANDLED)
 
 # Source (AVR)
 file(GLOB_RECURSE SOURCE_FILES_AVR "Source/*.cpp")
@@ -74,5 +74,5 @@ echo DONE!
 # "C:/Dev/avr-gcc-15.2.0-x64-windows/bin/avr-nm.exe" --size-sort --print-size -C MicroBuild.elf
 
 # Call:
-# cmake . -B Build
+# cmake -B Build
 # cmake -B Build -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"

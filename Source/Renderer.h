@@ -53,8 +53,7 @@ public:
     {
 #if __IDE__
         if(!FWindow::IsRunning()) exit(0);
-        FWindow::Render();
-        memset(GScreen, 80, sizeof(GScreen));
+        FWindow::Present();
 #endif
         
 #if DEBUG_SERIAL_PRINT_TICKS

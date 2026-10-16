@@ -30,11 +30,13 @@ public:
     
     static FFixedFloat Sin(const FAngle InAngle)
     {
+        static_assert(sizeof(FFixedFloat) == 4, "[FMath::Sin] FPROGMEM read FFixedFloat size mismatch!");
+        
         const uint8 Quadrant = InAngle >> 6;
         const uint8 Index = InAngle & 0x3F;
         
-        const FFixedFloat RawValue = SinLUT[(Quadrant == 0 || Quadrant == 2) ? Index : (63 - Index)];
-        return Quadrant >= 2 ? -RawValue : RawValue;
+        const FFixedFloat Value = FFixedFloat::FromRaw(FPROGMEM::ReadInt32(&SinLUT[(Quadrant == 0 || Quadrant == 2) ? Index : (63 - Index)]));
+        return Quadrant >= 2 ? -Value : Value;
     }
     
     static FFixedFloat Cos(const FAngle InAngle) { return Sin(InAngle + 64); }
@@ -60,11 +62,12 @@ private:
     }
     */
     
-    static constexpr FFixedFloat SinLUT[64] = {
-        FFixedFloat::FromRaw(0), FFixedFloat::FromRaw(1608), FFixedFloat::FromRaw(3215), FFixedFloat::FromRaw(4821),
-        FFixedFloat::FromRaw(6423), FFixedFloat::FromRaw(8022), FFixedFloat::FromRaw(9616), FFixedFloat::FromRaw(11204),
+    static constexpr FFixedFloat SinLUT[64] PROGMEM = 
+    {
+        FFixedFloat::FromRaw(0    ), FFixedFloat::FromRaw(1608 ), FFixedFloat::FromRaw(3215 ), FFixedFloat::FromRaw(4821 ),
+        FFixedFloat::FromRaw(6423 ), FFixedFloat::FromRaw(8022 ), FFixedFloat::FromRaw(9616 ), FFixedFloat::FromRaw(11204),
         FFixedFloat::FromRaw(12785), FFixedFloat::FromRaw(14359), FFixedFloat::FromRaw(15923), FFixedFloat::FromRaw(17479),
-        FFixedFloat::FromRaw(19024), FFixedFloat::FromRaw(20557), FFixedFloat::FromRaw(22078),FFixedFloat::FromRaw(23586),
+        FFixedFloat::FromRaw(19024), FFixedFloat::FromRaw(20557), FFixedFloat::FromRaw(22078), FFixedFloat::FromRaw(23586),
         FFixedFloat::FromRaw(25079), FFixedFloat::FromRaw(26557), FFixedFloat::FromRaw(28020), FFixedFloat::FromRaw(29465),
         FFixedFloat::FromRaw(30893), FFixedFloat::FromRaw(32302), FFixedFloat::FromRaw(33692), FFixedFloat::FromRaw(35061),
         FFixedFloat::FromRaw(36409), FFixedFloat::FromRaw(37736), FFixedFloat::FromRaw(39039), FFixedFloat::FromRaw(40319),

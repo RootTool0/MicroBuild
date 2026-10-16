@@ -14,7 +14,6 @@ int main()
     
 #if __IDE__
     FWindowGuard WindowGuard;
-    memset(GScreen, 80, sizeof(GScreen));
 #endif
     
     ST7735::Initialize();
