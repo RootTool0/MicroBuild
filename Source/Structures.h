@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "Advanced-AVR-Templates/Core/Aliases.h"
+
 struct FColor
 {
     

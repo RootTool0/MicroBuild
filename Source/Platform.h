@@ -2,9 +2,11 @@
 
 #pragma once
 
-#include "Advanced-AVR-Templates/Core/Aliases.h"
 #include "Global.h"
 #include "Structures.h"
+
+#include "Advanced-AVR-Templates/Core/Aliases.h"
+#include "Advanced-AVR-Templates/Memory/PROGMEM.h"
 
 #include <string.h>
 
@@ -124,22 +126,6 @@ struct FSerial
     template<uint16 InBaud>
     static void Initialize() {}
     static uint8 Receive() { return FWindow::Key; }
-};
-
-struct FPROGMEM
-{
-    
-public:
-    FORCEINLINE static uint8  ReadInt8 (const void* InAddr) { return *static_cast<const uint8 *>(InAddr); }
-    FORCEINLINE static uint16 ReadInt16(const void* InAddr) { return *static_cast<const uint16*>(InAddr); }
-    FORCEINLINE static uint32 ReadInt32(const void* InAddr) { return *static_cast<const uint32*>(InAddr); }
-    FORCEINLINE static uint32 ReadFloat(const void* InAddr) { return *static_cast<const uint32*>(InAddr); }
-    
-    FORCEINLINE static const void* ReadPtr(const void* InAddr) { return *static_cast<const void* const*>(InAddr);  }
-    template<typename T>
-    FORCEINLINE static T ReadPtrAndCast(const void* InAddr) { return reinterpret_cast<T>(ReadPtr(InAddr)); }
-    
-    FORCEINLINE static void Memcpy(void* OutDest, const void* InFlashAddr, const uint16 InSize) { memcpy(OutDest, InFlashAddr, InSize); }
 };
 
 struct ST7735
