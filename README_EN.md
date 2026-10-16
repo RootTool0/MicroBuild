@@ -11,6 +11,15 @@ Honest portals, non-Euclidean geometry and 10-15 FPS rendering on **ATmega328P**
 
 ---
 
+## Branches
+
+| Branch | Display | Resolution | Notes |
+|---|---|---|---|
+| **[main](https://github.com/RootTool0/MicroBuild/tree/main)** | ST7735 | 160x128 | Base, main, version |
+| **[OLED-Version](https://github.com/RootTool0/MicroBuild/tree/OLED-Version)** | OLED | 128x64 | Use screentone technic |
+
+---
+
 ## Features
 
 - Portal-based rendering _(sectors, walls, portals)_
@@ -19,7 +28,7 @@ Honest portals, non-Euclidean geometry and 10-15 FPS rendering on **ATmega328P**
 - BAM - all 360° in a single `uint8_t`
 - Sin LUT with 64 entries
 - Render task queue instead of recursion
-- ~10–15 FPS rendering on ATmega328P without display, ~4.8 FPS with ST7735
+- ~10-15 FPS rendering on **ATmega328P** without display, ~4.8 FPS with ST7735, ~10-15 FPS with OLED
 
 ## Hardware
 
@@ -143,9 +152,9 @@ Maps live in `Source/Maps/`, selection is in `Source/Map.h` _(uncomment the one 
 Flags in `Source/Global.h`:
 
 ```cpp
-#define DEBUG_SERIAL_PRINT_TICKS 1  // print ticks to serial
-#define DEBUG_NO_ST7355          0  // disable display (for benchmarks)
-#define DEBUG_NO_COLLISION       0  // disable collisions
+#define DEBUG_SERIAL_PRINT_TICKS 1 // print ticks to serial
+#define DEBUG_NO_DISPLAY          0 // disable display (for benchmarks)
+#define DEBUG_NO_COLLISION       0 // disable collisions
 ```
 
 FPS is measured via Timer1 with prescaler 64 _(`FPS = 250000 / Ticks`)_

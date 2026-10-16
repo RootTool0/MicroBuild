@@ -188,7 +188,7 @@ private:
 #include "Advanced-AVR-Templates/Communication/Serial.h"
 #include "Advanced-AVR-Templates/Memory/PROGMEM.h"
 
-#if DEBUG_NO_ST7355
+#if DEBUG_NO_DISPLAY
 struct ST7735
 {
     

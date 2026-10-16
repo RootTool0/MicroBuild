@@ -11,6 +11,15 @@
 
 ---
 
+## Ветки
+
+| Ветка | Дисплей | Разрешение | Примечание |
+|---|---|---|---|
+| **[main](https://github.com/RootTool0/MicroBuild/tree/main)** | ST7735 | 160x128 | Базовая, главная, версия |
+| **[OLED-Version](https://github.com/RootTool0/MicroBuild/tree/OLED-Version)** | OLED | 128x64 | Используется техника скринтона |
+
+---
+
 ## Возможности
 
 - Portal-based rendering _(сектора, стены, порталы)_
@@ -19,7 +28,7 @@
 - BAM - все 360° в одном `uint8_t`
 - LUT синусов на 64 значения
 - Очередь задач рендера вместо рекурсии
-- ~10–15 FPS рендера на ATmega328P без дисплея, ~4.8 FPS с ST7735
+- ~10-15 FPS рендера на **ATmega328P** без дисплея, ~4.8 FPS с ST7735, ~10-15 FPS с OLED
 
 ## Железо
 
@@ -143,9 +152,9 @@ set(F_CPU "16000000UL")
 Флаги в `Source/Global.h`:
 
 ```cpp
-#define DEBUG_SERIAL_PRINT_TICKS 1  // вывод тиков в serial
-#define DEBUG_NO_ST7355          0  // отключить дисплей (для бенчмарков)
-#define DEBUG_NO_COLLISION       0  // отключить коллизии
+#define DEBUG_SERIAL_PRINT_TICKS 1 // вывод тиков в serial
+#define DEBUG_NO_DISPLAY          0 // отключить дисплей (для бенчмарков)
+#define DEBUG_NO_COLLISION       0 // отключить коллизии
 ```
 
 FPS считается через Timer1 с предделителем 64 _(`FPS = 250000 / Ticks`)_
