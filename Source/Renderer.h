@@ -64,20 +64,17 @@ public:
         
         int8 TaskIndex;
         while((TaskIndex = FRenderTaskQueue::PopTaskIndex()) != -1)
-        {
             RenderSector(TaskIndex);
-        }
         
 #if DEBUG_SERIAL_PRINT_TICKS
         FTimerFPS::End();
 #endif
         
-        FDisplay::Render();
+        OLED::Present();
         
 #if __IDE__
         if(!FWindow::IsRunning()) exit(0);
-        FWindow::Render();
-        memset(GScreen, 80, sizeof(GScreen));
+        FWindow::Present();
 #endif
     }
 
@@ -148,7 +145,7 @@ private:
                 const int16 NextCeil  = bIsPortal ? FMath::Lerp(NextCeil1 , NextCeil2 , Delta) : Ceil ;
                 const int16 NextFloor = bIsPortal ? FMath::Lerp(NextFloor1, NextFloor2, Delta) : Floor;
                 
-                const FColor WallColor = X == X1 || X == X2 ? FColor::Outline : Wall.WallPaletteIndex;
+                const FColor WallColor = X == X1 || X == X2 ? FColor::Outline : Wall.WallColor;
                 
                 if(!bIsPortal) // Wall
                 {
@@ -156,42 +153,42 @@ private:
                     const int16 TopY    = FMath::Max<int16>(ClipTop   [X], Ceil );
                     const int16 BottomY = FMath::Min<int16>(ClipBottom[X], Floor);
                     
-                    FDisplay::SetWindow(X, ClipTop[X], X, ClipBottom[X]);
-                    FDisplay::BeginDraw();
+                    // OLED::SetWindow(X, ClipTop[X], X, ClipBottom[X]);
+                    // OLED::BeginDraw();
                     {
-                        for(int16 Y = ClipTop[X]; Y <= TopY - 1; ++Y) FDisplay::Draw(X, Y, Sector.CeilPaletteIndex);
-                        FDisplay::Draw(X, TopY, FColor::Outline);
-                        for(int16 Y = TopY + 1; Y <= BottomY - 1; ++Y) FDisplay::Draw(X, Y, WallColor);
-                        FDisplay::Draw(X, BottomY, FColor::Outline);
-                        for(int16 Y = BottomY + 1; Y <= ClipBottom[X]; ++Y) FDisplay::Draw(X, Y, Sector.FloorPaletteIndex);
+                        for(int16 Y = ClipTop[X]; Y <= TopY - 1; ++Y) OLED::Draw(X, Y, Sector.CeilColor);
+                        OLED::Draw(X, TopY, FColor::Outline);
+                        for(int16 Y = TopY + 1; Y <= BottomY - 1; ++Y) OLED::Draw(X, Y, WallColor);
+                        OLED::Draw(X, BottomY, FColor::Outline);
+                        for(int16 Y = BottomY + 1; Y <= ClipBottom[X]; ++Y) OLED::Draw(X, Y, Sector.FloorColor);
                     }
-                    FDisplay::EndDraw();
+                    // OLED::EndDraw();
                 }
                 else // Portal
                 {
                     const int16 TopEnd = (Sector.CeilZ > NextSector.CeilZ ? NextCeil : Ceil) - 1;
-                    FDisplay::SetWindow(X, ClipTop[X], X, TopEnd);
-                    FDisplay::BeginDraw();
+                    // OLED::SetWindow(X, ClipTop[X], X, TopEnd);
+                    // OLED::BeginDraw();
                     {
                         for(int16 Y = ClipTop[X]; Y <= TopEnd; ++Y)
                         {
-                            if(Y <= Ceil) FDisplay::Draw(X, Y, Sector.CeilPaletteIndex);
-                            else FDisplay::Draw(X, Y, ((Y == Ceil + 1 || Y == TopEnd) && Sector.FloorZ != NextSector.FloorZ) ? FColor::Outline : WallColor);
+                            if(Y <= Ceil) OLED::Draw(X, Y, Sector.CeilColor);
+                            else OLED::Draw(X, Y, ((Y == Ceil + 1 || Y == TopEnd) && Sector.FloorZ != NextSector.FloorZ) ? FColor::Outline : WallColor);
                         }
                     }
-                    FDisplay::EndDraw();
+                    // OLED::EndDraw();
                     
                     const int16 BottomStart = (Sector.FloorZ < NextSector.FloorZ ? NextFloor : Floor) + 1;
-                    FDisplay::SetWindow(X, BottomStart, X, ClipBottom[X]);
-                    FDisplay::BeginDraw();
+                    // OLED::SetWindow(X, BottomStart, X, ClipBottom[X]);
+                    // OLED::BeginDraw();
                     {
                         for(int16 Y = BottomStart; Y <= ClipBottom[X]; ++Y)
                         {
-                            if(Y >= Floor) FDisplay::Draw(X, Y, Sector.FloorPaletteIndex);
-                            else FDisplay::Draw(X, Y, ((Y == BottomStart || Y == Floor - 1) && Sector.FloorZ != NextSector.FloorZ) ? FColor::Outline : WallColor);
+                            if(Y >= Floor) OLED::Draw(X, Y, Sector.FloorColor);
+                            else OLED::Draw(X, Y, ((Y == BottomStart || Y == Floor - 1) && Sector.FloorZ != NextSector.FloorZ) ? FColor::Outline : WallColor);
                         }
                     }
-                    FDisplay::EndDraw();
+                    // OLED::EndDraw();
                 }
                 
                 ClipTop   [X] = FMath::Clamp<int16>(FMath::Max<int16>(Ceil , NextCeil ), ClipTop[X], ClipBottom[X]);
@@ -240,12 +237,12 @@ private:
     
     static void DrawNoTexture(const uint8 InX, const FColor InColor = FColor(0b10101010))
     {
-        FDisplay::SetWindow(InX, ClipTop[InX], InX, ClipBottom[InX]);
-        FDisplay::BeginDraw();
+        // OLED::SetWindow(InX, ClipTop[InX], InX, ClipBottom[InX]);
+        // OLED::BeginDraw();
         {
             bool bBlack = (InX & 1) == 0;
-            for(int16 Y = ClipTop[InX]; Y <= ClipBottom[InX]; ++Y) { FDisplay::Draw(InX, Y, bBlack ? FColor::Outline : InColor); bBlack = !bBlack; }
+            for(int16 Y = ClipTop[InX]; Y <= ClipBottom[InX]; ++Y) { OLED::Draw(InX, Y, bBlack ? FColor::Outline : InColor); bBlack = !bBlack; }
         }
-        FDisplay::EndDraw();
+        // OLED::EndDraw();
     }
 };

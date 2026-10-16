@@ -18,10 +18,10 @@ file(GLOB_RECURSE SOURCE_FILES_IDE CONFIGURE_DEPENDS "Source/*")
 add_executable(${PROJECT_NAME} ${SOURCE_FILES_IDE})
 
 # Package (IDE)
-find_package(SDL2 CONFIG REQUIRED)
+# find_package(SDL2 CONFIG REQUIRED)
 
-target_link_libraries(MicroBuild PRIVATE SDL2::SDL2)
-target_compile_definitions(MicroBuild PRIVATE SDL_MAIN_HANDLED)
+# target_link_libraries(MicroBuild PRIVATE SDL2::SDL2)
+# target_compile_definitions(MicroBuild PRIVATE SDL_MAIN_HANDLED)
 
 # Source (AVR)
 file(GLOB_RECURSE SOURCE_FILES_AVR "Source/*.cpp")
@@ -40,14 +40,12 @@ file(GENERATE OUTPUT "../Upload.bat" CONTENT
 setlocal enabledelayedexpansion
 
 echo [1/5] Compiling...
-\"${AVR_GCC_PATH}/bin/avr-gcc.exe\" -std=c++17 ^
-    -Os -flto -ffast-math -fno-move-loop-invariants -fgcse-las -fgcse-after-reload -fipa-cp ^
-    -fno-exceptions -fno-rtti -fno-threadsafe-statics -ffunction-sections -fdata-sections  ^
+\"${AVR_GCC_PATH}/bin/avr-gcc.exe\" -std=c++17 -Os -flto ^
+    -fno-exceptions -fno-rtti -fno-threadsafe-statics -ffunction-sections -fdata-sections -Wl,--gc-sections ^
     -mmcu=${MCU_NAME} -DF_CPU=${F_CPU} ^
     -I\"../Source\" ${SOURCE_FILES_AVR_STRING} ^
-    -o \"${PROJECT_NAME}.elf\" -Wl,--gc-sections ^
-    -Os -flto -ffast-math -fno-move-loop-invariants -fgcse-las -fgcse-after-reload -fipa-cp ^
-    -Wl,-Map=${PROJECT_NAME}.map
+    -o \"${PROJECT_NAME}.elf\" ^
+    -Wl,--gc-sections -Wl,-Map=${PROJECT_NAME}.map
 
 if %errorlevel% neq 0 (
     echo ERROR: Compilation failed!
@@ -73,8 +71,6 @@ echo DONE!
 :: pause"
 )
 
-# "C:/Dev/avr-gcc-15.2.0-x64-windows/bin/avr-nm.exe" --size-sort --print-size -C MicroBuild.elf
-
 # Call:
-# cmake . -B Build
+# cmake -B Build
 # cmake -B Build -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"

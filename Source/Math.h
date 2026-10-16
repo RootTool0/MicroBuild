@@ -30,19 +30,19 @@ public:
     
     static FFixedFloat Sin(const FAngle InAngle)
     {
+        static_assert(sizeof(FFixedFloat) == 4, "[FMath::Sin] FPROGMEM read FFixedFloat size mismatch!");
+        
         const uint8 Quadrant = InAngle >> 6;
         const uint8 Index = InAngle & 0x3F;
         
-        const FFixedFloat RawValue = SinLUT[(Quadrant == 0 || Quadrant == 2) ? Index : (63 - Index)];
-        return Quadrant >= 2 ? -RawValue : RawValue;
+        const FFixedFloat Value = FFixedFloat::FromRaw(FPROGMEM::ReadInt32(&SinLUT[(Quadrant == 0 || Quadrant == 2) ? Index : (63 - Index)]));
+        return Quadrant >= 2 ? -Value : Value;
     }
     
     static FFixedFloat Cos(const FAngle InAngle) { return Sin(InAngle + 64); }
     
     static bool IsLineSegmentsIntersect(const FFloatVector2D A, const FFloatVector2D B, const FFloatVector2D C, const FFloatVector2D D)
     {
-        
-        /*
         const FFixedFloat Denominator = (B.X - A.X) * (D.Y - C.Y) - (B.Y - A.Y) * (D.X - C.X);
         if(Denominator == FFixedFloat::Zero) return false;
         
@@ -50,31 +50,6 @@ public:
         const FFixedFloat I = ((C.X - A.X) * (B.Y - A.Y) - (C.Y - A.Y) * (B.X - A.X)) / Denominator;
         
         return U >= FFixedFloat::Zero && U <= FFixedFloat::One && I >= FFixedFloat::Zero && I <= FFixedFloat::One;
-        */
-        
-        // Считаем знаменатель и числители как 64-битные сырые целые (Raw), чтобы избежать переполнения при умножении
-        using Raw64 = int64;
-    
-        const Raw64 DenomRaw = (static_cast<Raw64>(B.X.Raw - A.X.Raw) * (D.Y.Raw - C.Y.Raw) - static_cast<Raw64>(B.Y.Raw - A.Y.Raw) * (D.X.Raw - C.X.Raw)) >> 16;
-        if (DenomRaw == 0) return false; // Линии параллельны
-
-        const Raw64 U_NumRaw = (static_cast<Raw64>(C.X.Raw - A.X.Raw) * (D.Y.Raw - C.Y.Raw) - static_cast<Raw64>(C.Y.Raw - A.Y.Raw) * (D.X.Raw - C.X.Raw)) >> 16;
-        const Raw64 I_NumRaw = (static_cast<Raw64>(C.X.Raw - A.X.Raw) * (B.Y.Raw - A.Y.Raw) - static_cast<Raw64>(C.Y.Raw - A.Y.Raw) * (B.X.Raw - A.X.Raw)) >> 16;
-
-        // Условие пересечения: 0 <= (Num / Denom) <= 1
-        // Чтобы избавиться от деления, проверяем знаки:
-        if (DenomRaw > 0)
-        {
-            if (U_NumRaw < 0 || U_NumRaw > DenomRaw) return false;
-            if (I_NumRaw < 0 || I_NumRaw > DenomRaw) return false;
-        }
-        else // DenomRaw < 0
-        {
-            if (U_NumRaw > 0 || U_NumRaw < DenomRaw) return false;
-            if (I_NumRaw > 0 || I_NumRaw < DenomRaw) return false;
-        }
-
-        return true;
     }
 
 private:
@@ -87,11 +62,12 @@ private:
     }
     */
     
-    static constexpr FFixedFloat SinLUT[64] = {
-        FFixedFloat::FromRaw(0), FFixedFloat::FromRaw(1608), FFixedFloat::FromRaw(3215), FFixedFloat::FromRaw(4821),
-        FFixedFloat::FromRaw(6423), FFixedFloat::FromRaw(8022), FFixedFloat::FromRaw(9616), FFixedFloat::FromRaw(11204),
+    static constexpr FFixedFloat SinLUT[64] PROGMEM = 
+    {
+        FFixedFloat::FromRaw(0    ), FFixedFloat::FromRaw(1608 ), FFixedFloat::FromRaw(3215 ), FFixedFloat::FromRaw(4821 ),
+        FFixedFloat::FromRaw(6423 ), FFixedFloat::FromRaw(8022 ), FFixedFloat::FromRaw(9616 ), FFixedFloat::FromRaw(11204),
         FFixedFloat::FromRaw(12785), FFixedFloat::FromRaw(14359), FFixedFloat::FromRaw(15923), FFixedFloat::FromRaw(17479),
-        FFixedFloat::FromRaw(19024), FFixedFloat::FromRaw(20557), FFixedFloat::FromRaw(22078),FFixedFloat::FromRaw(23586),
+        FFixedFloat::FromRaw(19024), FFixedFloat::FromRaw(20557), FFixedFloat::FromRaw(22078), FFixedFloat::FromRaw(23586),
         FFixedFloat::FromRaw(25079), FFixedFloat::FromRaw(26557), FFixedFloat::FromRaw(28020), FFixedFloat::FromRaw(29465),
         FFixedFloat::FromRaw(30893), FFixedFloat::FromRaw(32302), FFixedFloat::FromRaw(33692), FFixedFloat::FromRaw(35061),
         FFixedFloat::FromRaw(36409), FFixedFloat::FromRaw(37736), FFixedFloat::FromRaw(39039), FFixedFloat::FromRaw(40319),

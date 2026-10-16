@@ -2,109 +2,35 @@
 
 #pragma once
 
-#include "Advanced-AVR-Templates/Core/Aliases.h"
 #include "Global.h"
 #include "Structures.h"
+
+#include "Advanced-AVR-Templates/Core/Aliases.h"
+#include "Advanced-AVR-Templates/Memory/PROGMEM.h"
 
 #include <string.h>
 
 FORCEINLINE bool Screentone(const uint8 InX, const uint8 InY, const FColor InColor);
 
 #if __IDE__
-#include <SDL.h>
+#define RGFW_IMPLEMENTATION
+#include "Thirdparty/RGFW.h"
+
+#include <cstdio>
+#include <time.h>
 
 struct FPixel
 {
     
 public:
-    uint8 B = 0;
-    uint8 G = 0;
     uint8 R = 0;
+    uint8 G = 0;
+    uint8 B = 0;
     uint8 _ = 0xFF;
     
     constexpr FPixel() = default;
-    constexpr FPixel(const uint8 InR, const uint8 InG, const uint8 InB) : B(InB), G(InG), R(InR), _(0xFF) {}
-//  constexpr FPixel(const FColor InColor) : B((InColor.Data & 0x1F) * 255 / 31), G(((InColor.Data >> 5) & 0x3F) * 255 / 63), R(((InColor.Data >> 11) & 0x1F) * 255 / 31), _(0xFF) {}
+    constexpr FPixel(const uint8 InR, const uint8 InG, const uint8 InB) : R(InR), G(InG), B(InB), _(0xFF) {}
 };
-
-static inline uint8 GKey = 0;
-static inline bool bGPinButtonF = false;
-static inline bool bGPinButtonB = false;
-static inline bool bGPinButtonL = false;
-static inline bool bGPinButtonR = false;
-static inline FPixel GScreen[WINDOW_WIDTH * WINDOW_HEIGHT];
-
-struct PinButtonF
-{
-    FORCEINLINE static void InitializeAsInput() {}
-    FORCEINLINE static void EnablePullUp() {}
-    FORCEINLINE static bool Get() { return bGPinButtonF; }
-};
-
-struct PinButtonB
-{
-    FORCEINLINE static void InitializeAsInput() {}
-    FORCEINLINE static void EnablePullUp() {}
-    FORCEINLINE static bool Get() { return bGPinButtonB; }
-};
-
-struct PinButtonL
-{
-    FORCEINLINE static void InitializeAsInput() {}
-    FORCEINLINE static void EnablePullUp() {}
-    FORCEINLINE static bool Get() { return bGPinButtonL; }
-};
-
-struct PinButtonR
-{
-    FORCEINLINE static void InitializeAsInput() {}
-    FORCEINLINE static void EnablePullUp() {}
-    FORCEINLINE static bool Get() { return bGPinButtonR; }
-};
-
-struct FSerial
-{
-    template<uint16 InBaud>
-    static void Initialize() {}
-    static uint8 Receive() { return GKey; }
-};
-
-struct FPROGMEM
-{
-    
-public:
-    FORCEINLINE static uint8  ReadInt8 (const void* InAddr) { return *static_cast<const uint8 *>(InAddr); }
-    FORCEINLINE static uint16 ReadInt16(const void* InAddr) { return *static_cast<const uint16*>(InAddr); }
-    FORCEINLINE static uint32 ReadInt32(const void* InAddr) { return *static_cast<const uint32*>(InAddr); }
-    FORCEINLINE static uint32 ReadFloat(const void* InAddr) { return *static_cast<const uint32*>(InAddr); }
-    
-    FORCEINLINE static const void* ReadPtr(const void* InAddr) { return *static_cast<const void* const*>(InAddr);  }
-    template<typename T>
-    FORCEINLINE static T ReadPtrAndCast(const void* InAddr) { return reinterpret_cast<T>(ReadPtr(InAddr)); }
-    
-    FORCEINLINE static void Memcpy(void* OutDest, const void* InFlashAddr, const uint16 InSize) { memcpy(OutDest, InFlashAddr, InSize); }
-};
-
-struct FDisplaySDL2
-{
-    FORCEINLINE static void Initialize() {}
-    FORCEINLINE static void SetWindow(const uint8 InX0, const uint8 InY0, const uint8 InX1, const uint8 InY1) {}
-    
-    FORCEINLINE static void BeginDraw() {}
-    FORCEINLINE static void EndDraw() {}
-    
-    FORCEINLINE static void Draw(const uint8 InX, const uint8 InY, const FColor InColor)
-    {
-        const bool bLit = Screentone(InX, InY, InColor);
-        GScreen[WINDOW_WIDTH * InY + InX] = FPixel(0, bLit ? 255 : 0, bLit ? 255 : 0);
-        // FWindow::Render();
-        // SDL_Delay(2);
-    }
-    
-    FORCEINLINE static void Render() {}
-};
-
-using FDisplay = FDisplaySDL2;
 
 struct FWindow
 {
@@ -112,63 +38,43 @@ struct FWindow
 public:
     #define WINDOW_SCALE 9
     
+    static inline uint8 Key = 0;
+    static inline FPixel Screen[WINDOW_WIDTH * WINDOW_SCALE * WINDOW_HEIGHT * WINDOW_SCALE];
+    
     static void Initialize()
     {
-        if(SDL_Init(SDL_INIT_VIDEO) < 0)
+        if(Window = RGFW_createWindow("MicroBuild", 0, 0, WINDOW_WIDTH * WINDOW_SCALE, WINDOW_HEIGHT * WINDOW_SCALE, RGFW_windowCenter); !Window)
         {
-            printf("SDL Initialization error: %s\n", SDL_GetError());
+            printf("RGFW Create Window Error!\n");
+            Deinitialize();
             return;
         }
         
-        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
-        SDL_SetRelativeMouseMode(SDL_TRUE);
-        
-        WindowHandle = SDL_CreateWindow("MicroBuild", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * WINDOW_SCALE, WINDOW_HEIGHT * WINDOW_SCALE, SDL_WINDOW_SHOWN);
-        if(!WindowHandle)
+        if(Surface = RGFW_createSurface(reinterpret_cast<uint8*>(Screen), WINDOW_WIDTH * WINDOW_SCALE, WINDOW_HEIGHT * WINDOW_SCALE, RGFW_formatRGBA8); !Surface)
         {
-            printf("Window Initialization error: %s\n", SDL_GetError());
-            SDL_Quit();
-            return;
-        }
-        
-        RendererHandle = SDL_CreateRenderer(WindowHandle, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-        if(!RendererHandle)
-        {
-            printf("Renderer Initialization error: %s\n", SDL_GetError());
-            SDL_DestroyWindow(WindowHandle);
-            SDL_Quit();
-            return;
-        }
-        
-        TextureHandle = SDL_CreateTexture(RendererHandle, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WINDOW_WIDTH, WINDOW_HEIGHT);
-        if(!TextureHandle)
-        {
-            printf("Texture Initialization error: %s\n", SDL_GetError());
-            SDL_DestroyRenderer(RendererHandle);
-            SDL_DestroyWindow(WindowHandle);
-            SDL_Quit();
+            printf("RGFW Create Surface Error!\n");
+            Deinitialize();
             return;
         }
     }
-
+    
     static void Deinitialize()
     {
-        if(TextureHandle) SDL_DestroyTexture(TextureHandle);
-        if(RendererHandle) SDL_DestroyRenderer(RendererHandle);
-        if(WindowHandle) SDL_DestroyWindow(WindowHandle);
-        SDL_Quit();
+        if(Surface) RGFW_surface_free(Surface);
+        if(Window) RGFW_window_close(Window);
     }
     
     static bool IsRunning()
     {
-        SDL_Event Event;
-        while(SDL_PollEvent(&Event))
-            if(Event.type == SDL_QUIT || (Event.type == SDL_KEYDOWN && Event.key.keysym.sym == SDLK_ESCAPE))
+        RGFW_event Event;
+        while(RGFW_window_checkEvent(Window, &Event))
+            if(Event.type == RGFW_quit || (Event.type == RGFW_keyPressed && Event.key.value == RGFW_escape))
                 return false;
         
+        /*
         const uint8_t* KeyState = SDL_GetKeyboardState(nullptr);
         
-        /**/ if(KeyState[SDL_SCANCODE_Q]) GKey = 'q';
+        /*#1# if(KeyState[SDL_SCANCODE_Q]) GKey = 'q';
         else if(KeyState[SDL_SCANCODE_E]) GKey = 'e';
         
         else if(KeyState[SDL_SCANCODE_Z]) { GKey = 'z'; SDL_Delay(100); printf("CurrentSector: %i\n", FPlayer::CurrentSector + 1); }
@@ -177,27 +83,56 @@ public:
         else if(KeyState[SDL_SCANCODE_R]) GKey = 'r';
         else if(KeyState[SDL_SCANCODE_F]) GKey = 'f';
         
-        else if(bGPinButtonF = KeyState[SDL_SCANCODE_W]; bGPinButtonF) GKey = 'w';
-        else if(bGPinButtonB = KeyState[SDL_SCANCODE_S]; bGPinButtonB) GKey = 's';
-        else if(bGPinButtonL = KeyState[SDL_SCANCODE_A]; bGPinButtonL) GKey = 'a';
-        else if(bGPinButtonR = KeyState[SDL_SCANCODE_D]; bGPinButtonR) GKey = 'd';
+        else if(KeyState[SDL_SCANCODE_W]) GKey = 'w';
+        else if(KeyState[SDL_SCANCODE_S]) GKey = 's';
+        else if(KeyState[SDL_SCANCODE_A]) GKey = 'a';
+        else if(KeyState[SDL_SCANCODE_D]) GKey = 'd';
         else GKey = 0;
+        */
+        
+        if(Event.type == RGFW_keyReleased) Key = 0;
+        if(Event.type == RGFW_keyPressed) Key = Event.key.sym;
         
         return true;
     }
     
-    static void Render()
+    static void Present()
     {
-        SDL_RenderClear(RendererHandle);
-        SDL_UpdateTexture(TextureHandle, nullptr, GScreen, WINDOW_WIDTH * 4);
-        SDL_RenderCopy(RendererHandle, TextureHandle, nullptr, nullptr);
-        SDL_RenderPresent(RendererHandle);
+        RGFW_window_blitSurface(Window, Surface);
+    }
+    
+    static void DrawPixel(const int32 InX, const int32 InY, const FPixel InColor)
+    {
+        if(InX < 0 || InX >= WINDOW_WIDTH || InY < 0 || InY >= WINDOW_HEIGHT) return;
+        
+        for(int32 i = 0; i < WINDOW_SCALE; ++i)
+            for(int32 j = 0; j < WINDOW_SCALE; ++j) 
+                Screen[((InY * WINDOW_SCALE) + i) * (WINDOW_WIDTH * WINDOW_SCALE) + (InX * WINDOW_SCALE) + j] = InColor;
     }
 
 private:
-    static inline SDL_Window* WindowHandle = nullptr;
-    static inline SDL_Renderer* RendererHandle = nullptr;
-    static inline SDL_Texture* TextureHandle = nullptr;
+    static inline RGFW_window* Window = nullptr;
+    static inline RGFW_surface* Surface = nullptr;
+};
+
+struct FSerial
+{
+    template<uint16 InBaud>
+    static void Initialize() {}
+    static uint8 Receive() { return FWindow::Key; }
+};
+
+struct OLED
+{
+    FORCEINLINE static void Initialize() {}
+    
+    FORCEINLINE static void Draw(const uint8 InX, const uint8 InY, const FColor InColor)
+    {
+        const bool bLit = Screentone(InX, InY, InColor);
+        FWindow::DrawPixel(InX, InY, FPixel(0, bLit ? 255 : 0, bLit ? 255 : 0));
+    }
+    
+    FORCEINLINE static void Present() {}
 };
 
 class FWindowGuard
@@ -213,32 +148,14 @@ public:
 #include "Advanced-AVR-Templates/Communication/Serial.h"
 #include "Advanced-AVR-Templates/Memory/PROGMEM.h"
 
-using PinButtonF = TPin<EPin::D2>;
-using PinButtonB = TPin<EPin::D3>;
-using PinButtonL = TPin<EPin::D6>;
-using PinButtonR = TPin<EPin::D5>;
-
 #if DEBUG_NO_DISPLAY
 #else
 #include "Advanced-AVR-Templates/Display/OLED.h"
 
-struct FDisplayOLED
+struct OLED : TOLED<0x3c>
 {
     
 public:
-    using OLED = TOLED<0x3c>;
-    
-    FORCEINLINE static void Initialize() 
-    {
-        OLED::Initialize();
-        memset(FrameBuffer, 0, sizeof(FrameBuffer));
-    }
-    
-    FORCEINLINE static void SetWindow(const uint8 InX0, const uint8 InY0, const uint8 InX1, const uint8 InY1) { }
-    
-    FORCEINLINE static void BeginDraw() {}
-    FORCEINLINE static void EndDraw() {}
-    
     FORCEINLINE static void Draw(const uint8 InX, const uint8 InY, const FColor InColor) 
     {
         const uint16 BufferIndex = InX + (InY / 8) * WINDOW_WIDTH;
@@ -249,16 +166,15 @@ public:
         else FrameBuffer[BufferIndex] &= ~BitMask;
     }
     
-    FORCEINLINE static void Render() 
+    FORCEINLINE static void Present() 
     {
         OLED::FillFromBuffer(FrameBuffer);
     }
 
 private:
-    static inline uint8 FrameBuffer[1024] = {};
+    static inline uint8 FrameBuffer[1024];
 };
 
-using FDisplay = FDisplayOLED;
 #endif
 
 #endif
@@ -283,7 +199,7 @@ public:
     static void Start()
     {
 #if __IDE__
-        StartTime = SDL_GetTicks();
+        StartTime = clock();
 #else
         TCNT1 = 0;
 #endif
@@ -292,7 +208,7 @@ public:
     static void End()
     {
 #if __IDE__
-        printf("FPS: %.2f\n", 1000.f / static_cast<float>(SDL_GetTicks() - StartTime));
+        printf("FPS: %.2f\n", 1000.f / static_cast<float>(clock() - StartTime));
 #else
         uint16 Timer = TCNT1;
         
@@ -307,6 +223,5 @@ public:
     }
 };
 
-// inline FColor LoadFromFlash(const FColor& InColor) { FColor Color; FPROGMEM::Memcpy(&Color, &InColor, sizeof(FColor)); return Color; }
 inline FWall LoadFromFlash(const FWall& InWall) { FWall Wall; FPROGMEM::Memcpy(&Wall, &InWall, sizeof(FWall)); return Wall; }
 inline FSector LoadFromFlash(const FSector& InSector) { FSector Sector; FPROGMEM::Memcpy(&Sector, &InSector, sizeof(FSector)); return Sector; }

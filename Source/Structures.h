@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "Advanced-AVR-Templates/Core/Aliases.h"
+
 struct FColor
 {
     
@@ -148,17 +150,10 @@ struct FWall
     
 public:
     FIntVector2D Point1, Point2;
-    uint8 WallPaletteIndex; // Used as color
+    FColor WallColor; // Used as color
     int8 PortalNextSector;
     int8 PortalNextWall;
     FAngle PortalAngleDelta;
-    
-    FORCEINLINE static FIntVector2D GetPoint1           (const FWall& InFlashWall);
-    FORCEINLINE static FIntVector2D GetPoint2           (const FWall& InFlashWall);
-    FORCEINLINE static uint8        GetWallPaletteIndex (const FWall& InFlashWall);
-    FORCEINLINE static int8         GetPortalNextSector (const FWall& InFlashWall);
-    FORCEINLINE static int8         GetPortalNextWall   (const FWall& InFlashWall);
-    FORCEINLINE static FAngle       GetPortalAngleDelta (const FWall& InFlashWall);
 };
 
 struct FSector
@@ -169,14 +164,6 @@ public:
     int8 CeilZ;
     uint8 WallStartIndex;
     uint8 WallCount;
-    uint8 CeilPaletteIndex;  // Used as color
-    uint8 FloorPaletteIndex; // Used as color
-    
-    FORCEINLINE static int8  GetFloorZ            (const FSector& InFlashSector);
-    FORCEINLINE static int8  GetCeilZ             (const FSector& InFlashSector);
-    FORCEINLINE static uint8 GetWallStartIndex    (const FSector& InFlashSector);
-    FORCEINLINE static uint8 GetWallCount         (const FSector& InFlashSector);
-    FORCEINLINE static uint8 GetCeilPaletteIndex  (const FSector& InFlashSector);
-    FORCEINLINE static uint8 GetFloorPaletteIndex (const FSector& InFlashSector);
+    FColor CeilColor;  // Used as color
+    FColor FloorColor; // Used as color
 };
-
