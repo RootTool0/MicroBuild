@@ -71,8 +71,6 @@ echo DONE!
 :: pause"
 )
 
-# "C:/Dev/avr-gcc-15.2.0-x64-windows/bin/avr-nm.exe" --size-sort --print-size -C MicroBuild.elf
-
 # Call:
 # cmake -B Build
 # cmake -B Build -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
